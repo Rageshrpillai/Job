@@ -27,8 +27,8 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      */
-    public function down(): void
-    {
-        Schema::dropIfExists('form_entries');
-    }
+   public function down(): void
+{
+    Schema::dropIfExists('event_participants');
+}
 };
