@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\EventController;
-use App\Http\Controllers\AuthController; // <-- The import for your new controller
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -27,14 +27,17 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
+    // Add this line to fetch all users
+    Route::get('/users', [AuthController::class, 'index']);
+
     // You can add all your admin-specific API routes here later
 });
-
 /*
 |--------------------------------------------------------------------------
 | Existing Event Participant Routes
 |--------------------------------------------------------------------------
 */
+Route::post('/event-register', [EventController::class, 'store']); // This line has been added
 Route::get('/event-participants', [EventController::class, 'index']);
 Route::get('/event-participants/{participant}', [EventController::class, 'show']);
 Route::delete('/event-participants/{participant}', [EventController::class, 'destroy']);

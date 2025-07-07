@@ -39,6 +39,19 @@ class AuthController extends Controller
         ], 201);
     }
 
+
+
+public function index()
+    {
+        // Ensure only admins can access this list
+        if (!auth()->user()->is_admin) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        // Return all users
+        return \App\Models\User::all();
+    }
+
     /**
      * Handle an authentication attempt for an admin user.
      */
