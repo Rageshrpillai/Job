@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "./api";
 
 function AdminLogin({ onLogin }) {
   const [email, setEmail] = useState("");
@@ -13,17 +13,13 @@ function AdminLogin({ onLogin }) {
     setError("");
 
     try {
-      await axios.get("/sanctum/csrf-cookie");
-      const response = await axios.post("/api/login", { email, password });
+      // First, get the CSRF cookie
+      await api.get("/sanctum/csrf-cookie");
+      // Then, attempt to log in to the specific admin route
+      const response = await api.post("/api/admin/login", { email, password });
       onLogin(response.data);
     } catch (err) {
-      if (err.response && err.response.status === 422) {
-        setError("Invalid credentials provided.");
-      } else if (err.response && err.response.status === 403) {
-        setError(err.response.data.message);
-      } else {
-        setError("An unexpected error occurred. Please try again.");
-      }
+      setError("Invalid credentials or admin access required.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -43,6 +39,7 @@ function AdminLogin({ onLogin }) {
           <input
             type="email"
             value={email}
+            autoComplete="email" // Add this line
             onChange={(e) => setEmail(e.target.value)}
             required
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"

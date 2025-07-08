@@ -1,43 +1,56 @@
 <?php
 
 use Illuminate\Http\Request;
-use App\Http\Controllers\EventController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Auth\AdminAuthController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\AdminController;
 /*
 |--------------------------------------------------------------------------
-| Authentication Routes
+| Public User Routes
 |--------------------------------------------------------------------------
-| These routes are public, allowing users to register and log in.
+| These routes are for regular user registration and login.
 */
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+
 /*
 |--------------------------------------------------------------------------
-| Authenticated Routes
+| Public Admin Route
 |--------------------------------------------------------------------------
-| This group requires a user to be logged in (via Sanctum) to access.
+| This route is exclusively for administrator login.
+*/
+Route::post('/admin/login', [AdminAuthController::class, 'login']);
+
+
+/*
+|--------------------------------------------------------------------------
+| Protected Routes
+|--------------------------------------------------------------------------
+| These routes require a user to be authenticated via a Sanctum session cookie.
 */
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
+    // Returns the currently logged-in user's data
+    Route::get('/user', fn(Request $request) => $request->user());
 
-    // Add this line to fetch all users
+    // An admin-only route to view all registered users
     Route::get('/users', [AuthController::class, 'index']);
-
-    // You can add all your admin-specific API routes here later
 });
+
+
+
 /*
 |--------------------------------------------------------------------------
-| Existing Event Participant Routes
+| Admin-Only Routes
 |--------------------------------------------------------------------------
 */
-Route::post('/event-register', [EventController::class, 'store']); // This line has been added
-Route::get('/event-participants', [EventController::class, 'index']);
-Route::get('/event-participants/{participant}', [EventController::class, 'show']);
-Route::delete('/event-participants/{participant}', [EventController::class, 'destroy']);
+Route::middleware(['auth:sanctum', 'is.admin'])->prefix('admin')->group(function () {
+    // GET /api/admin/users
+    Route::get('/users', [AdminController::class, 'index']);
+
+    // POST /api/admin/users/{user}/approve
+    Route::post('/users/{user}/approve', [AdminController::class, 'approveUser']);
+});

@@ -16,30 +16,24 @@ class AuthController extends Controller
      * but for now, we'll allow registration to create the first admin.
      */
     public function register(Request $request)
-    {
-        // Validate the incoming request data.
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'], // 'confirmed' checks for a 'password_confirmation' field.
-        ]);
+{
+    $validatedData = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'password' => 'required|string|min:8',
+    ]);
 
-        // Create the new user.
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password), // Always hash passwords!
-            'is_admin' => true, // We are hardcoding this to true for admin registration.
-        ]);
+    $user = User::create([
+        'name' => $validatedData['name'],
+        'email' => $validatedData['email'],
+        'password' => Hash::make($validatedData['password']),
+        // 'status' will be 'pending_approval' by default
+    ]);
 
-        // Return a success response.
-        return response()->json([
-            'message' => 'Admin user registered successfully.',
-            'user' => $user
-        ], 201);
-    }
-
-
+    return response()->json([
+        'message' => 'Registration successful. Your account is pending admin approval.'
+    ], 201);
+}
 
 public function index()
     {
@@ -56,35 +50,26 @@ public function index()
      * Handle an authentication attempt for an admin user.
      */
     public function login(Request $request)
-    {
-        // 1. Validate the incoming request.
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+{
+    $request->validate(['email' => 'required|email', 'password' => 'required']);
+
+    if (!Auth::attempt($request->only('email', 'password'))) {
+        throw ValidationException::withMessages([
+            'email' => ['The provided credentials do not match our records.'],
         ]);
-
-        // 2. Attempt to authenticate the user using Laravel's built-in system.
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            // This handles incorrect email or password.
-            throw ValidationException::withMessages([
-                'email' => ['The provided credentials do not match our records.'],
-            ]);
-        }
-        
-        // 3. Security Check: Make sure the user is an admin.
-        if (! Auth::user()->is_admin) {
-            // If they are not an admin, log them out immediately and deny access.
-            Auth::logout();
-            return response()->json(['message' => 'Unauthorized. Admin access required.'], 403);
-        }
-
-        // 4. Security Best Practice: Regenerate the session to prevent session fixation attacks.
-        $request->session()->regenerate();
-
-        // 5. Return the authenticated user's data to the frontend.
-        return response()->json(Auth::user());
     }
 
+    $user = Auth::user();
+
+    if ($user->is_admin || $user->status !== 'active') {
+        Auth::logout();
+        return response()->json(['message' => 'This login is for active users only.'], 403);
+    }
+
+    $request->session()->regenerate();
+
+    return response()->json($user);
+}
     /**
      * Log the user out of the application.
      */
