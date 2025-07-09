@@ -1,3 +1,4 @@
+// form-frontend/src/AdminLogin.jsx
 import React, { useState } from "react";
 import api from "./api";
 
@@ -13,9 +14,7 @@ function AdminLogin({ onLogin }) {
     setError("");
 
     try {
-      // First, get the CSRF cookie
       await api.get("/sanctum/csrf-cookie");
-      // Then, attempt to log in to the specific admin route
       const response = await api.post("/api/admin/login", { email, password });
       onLogin(response.data);
     } catch (err) {
@@ -27,47 +26,51 @@ function AdminLogin({ onLogin }) {
   };
 
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-xl w-full">
-      <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
-        Admin Login
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="text-sm font-medium text-gray-700 block mb-2">
-            Email Address
-          </label>
-          <input
-            type="email"
-            value={email}
-            autoComplete="email" // Add this line
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-700 block mb-2">
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-          />
-        </div>
-        {error && (
-          <p className="text-red-500 text-sm text-center pt-2">{error}</p>
-        )}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 mt-4 text-white bg-blue-600 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 transition-colors"
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
+    <div className="bg-gradient-to-br from-blue-100 to-blue-300 min-h-screen flex items-center justify-center">
+      <div className="bg-blue-50 bg-opacity-80 p-10 rounded-3xl shadow-xl border border-blue-200 w-full max-w-md backdrop-blur-sm">
+        <h2 className="text-4xl font-extrabold text-center text-gray-800 mb-10">
+          Admin Login
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div>
+            <label className="text-base font-medium text-gray-700 block mb-3">
+              Email Address
+            </label>
+            <input
+              type="email"
+              value={email}
+              autoComplete="email"
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-3 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 ease-in-out"
+            />
+          </div>
+          <div>
+            <label className="text-base font-medium text-gray-700 block mb-3">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-3 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 ease-in-out"
+            />
+          </div>
+          {error && (
+            <p className="text-red-600 text-sm text-center pt-2 font-semibold">
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-4 mt-6 text-white bg-blue-700 rounded-lg font-bold hover:bg-blue-800 focus:outline-none focus:ring-3 focus:ring-blue-600 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-300"
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

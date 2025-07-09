@@ -1,18 +1,19 @@
+// form-frontend/src/AuthPage.jsx
 import React, { useState } from "react";
-import AdminLogin from "./AdminLogin";
-import AdminRegister from "./AdminRegister";
+import UserLogin from "./UserLogin";
+import UserRegister from "./UserRegister";
 
 function AuthPage({ onAuthSuccess }) {
-  const [isLoginView, setIsLoginView] = useState(true);
+  const [isLoginView, setIsLoginView] = useState(true); // State to toggle between Login and Register forms for users
 
   return (
     // This container will center the form on the page
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
       <div className="w-full max-w-md">
         {isLoginView ? (
-          <AdminLogin onLogin={onAuthSuccess} />
+          <UserLogin onLogin={onAuthSuccess} />
         ) : (
-          <AdminRegister onRegisterSuccess={() => setIsLoginView(true)} />
+          <UserRegister onRegisterSuccess={() => setIsLoginView(true)} />
         )}
         <div className="text-center mt-6">
           <button

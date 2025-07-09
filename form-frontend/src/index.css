@@ -1,1 +1,14 @@
 @import "tailwindcss";
+html,
+body,
+#root {
+  height: 100%; /* Ensures these elements take up full height */
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  /* Apply global styles, if any. The background and centering will be handled by AdminLogin's outermost div */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

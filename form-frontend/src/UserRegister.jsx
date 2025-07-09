@@ -1,7 +1,8 @@
+// form-frontend/src/UserRegister.jsx
 import React, { useState } from "react";
-import axios from "axios";
+import axios from "axios"; //
 
-function AdminRegister({ onRegisterSuccess }) {
+function UserRegister({ onRegisterSuccess }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,14 +24,17 @@ function AdminRegister({ onRegisterSuccess }) {
     }
 
     try {
-      await axios.get("/sanctum/csrf-cookie");
+      await axios.get("/sanctum/csrf-cookie"); //
       await axios.post("/api/register", {
+        //
         name,
         email,
         password,
         password_confirmation: passwordConfirmation,
       });
-      setSuccess("Registration successful! Redirecting to login...");
+      setSuccess(
+        "Registration successful! Your account is pending admin approval. Redirecting to login..."
+      );
       setName("");
       setEmail("");
       setPassword("");
@@ -53,7 +57,7 @@ function AdminRegister({ onRegisterSuccess }) {
   return (
     <div className="bg-white p-8 rounded-2xl shadow-xl w-full">
       <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
-        Create Admin Account
+        Register New Account
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
@@ -122,4 +126,4 @@ function AdminRegister({ onRegisterSuccess }) {
   );
 }
 
-export default AdminRegister;
+export default UserRegister;
