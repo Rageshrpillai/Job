@@ -1,4 +1,3 @@
-// form-frontend/src/AdminLogin.jsx
 import React, { useState } from "react";
 import api from "./api";
 
@@ -14,11 +13,33 @@ function AdminLogin({ onLogin }) {
     setError("");
 
     try {
+      // Ensure CSRF cookie is set before login attempt
       await api.get("/sanctum/csrf-cookie");
+
+      // Attempt to log in
       const response = await api.post("/api/admin/login", { email, password });
+
+      // On success, call the parent component's onLogin handler
       onLogin(response.data);
     } catch (err) {
-      setError("Invalid credentials or admin access required.");
+      // **FIXED**: This now displays specific validation errors from Laravel
+      if (err.response && err.response.data) {
+        // Laravel validation errors are usually in an 'errors' object
+        const validationErrors = err.response.data.errors;
+        if (validationErrors) {
+          const firstError = Object.values(validationErrors)[0][0];
+          setError(firstError);
+        } else {
+          // Fallback to a generic message if the structure is different
+          setError(
+            err.response.data.message ||
+              "Login failed. Please check credentials."
+          );
+        }
+      } else {
+        // Handle network errors or other unexpected issues
+        setError("An unexpected error occurred. Please try again.");
+      }
       console.error(err);
     } finally {
       setLoading(false);

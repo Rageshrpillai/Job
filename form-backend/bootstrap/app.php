@@ -2,7 +2,6 @@
 
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
-
 use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -13,15 +12,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // This part is for the API session handling (do not remove)
+        // This part is for the API session handling
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Session\Middleware\StartSession::class,
         ]);
 
-        // This part is for our custom admin middleware alias
+        // **FIX**: Register your custom middleware alias here
         $middleware->alias([
-            'is.admin' => \App\Http\Middleware\IsAdmin::class,
+            'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+            'admin' => \App\Http\Middleware\IsAdmin::class, // <-- ADD THIS LINE
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

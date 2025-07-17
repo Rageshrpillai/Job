@@ -15,10 +15,12 @@ class IsAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user() || ! $request->user()->is_admin) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+        // Check if the user is authenticated and is an admin
+        if ($request->user() && $request->user()->is_admin) {
+            return $next($request);
         }
 
-        return $next($request);
+        // If not an admin, return a 'Forbidden' error
+        return response()->json(['message' => 'Unauthorized. Administrator access required.'], 403);
     }
 }

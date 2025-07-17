@@ -1,176 +1,165 @@
-// form-frontend/src/UserDetailModal.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
+import api from "./api";
 
-function UserDetailModal({
-  user,
-  onClose,
-  onApprove,
-  onBlock, // New prop for blocking
-  onUnblock, // New prop for unblocking
-  onSoftDelete, // New prop for soft deleting
-  onRestore, // New prop for restoring
-  onForceDelete, // New prop for force deleting
-}) {
-  if (!user) return null;
+function UserDetailModal({ user, onClose, onAction }) {
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Helper to determine if user is soft-deleted
-  const isTrashed = user.deleted_at !== null;
+  useEffect(() => {
+    // This effect will run whenever the 'user' prop changes.
+    // It ensures that when you click "View" on a new user, their history is fetched.
+    if (user && user.id) {
+      setLoadingHistory(true);
+      api
+        .get(`/api/admin/users/${user.id}/login-history`)
+        .then((response) => {
+          setHistory(response.data);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch login history", err);
+          setHistory([]); // Ensure history is cleared on an error
+        })
+        .finally(() => setLoadingHistory(false));
+    }
+  }, [user]); // The dependency array makes this effect re-run when the user object changes.
+
+  if (!user) {
+    return null; // Don't render anything if no user is selected
+  }
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">User Details</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-3xl font-bold leading-none"
-          >
-            &times;
-          </button>
-        </div>
+    // The z-50 class ensures it has a base layer index
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+        <h3 className="text-xl font-bold mb-4">{user.name}</h3>
 
-        <div className="space-y-4 text-left">
-          <p>
-            <strong className="text-gray-700">Name:</strong> {user.name}
-          </p>
-          <p>
-            <strong className="text-gray-700">Email:</strong> {user.email}
-          </p>
-          <p>
-            <strong className="text-gray-700">Status:</strong>{" "}
-            <span
-              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                isTrashed
-                  ? "bg-gray-100 text-gray-800"
-                  : user.is_blocked
-                  ? "bg-red-100 text-red-800"
-                  : user.status === "active"
-                  ? "bg-green-100 text-green-800"
-                  : user.status === "pending_approval"
-                  ? "bg-yellow-100 text-yellow-800"
-                  : "bg-blue-100 text-blue-800" // Fallback for other statuses
-              }`}
-            >
-              {isTrashed
-                ? "Deleted"
-                : user.is_blocked
-                ? "Blocked"
-                : user.status.replace("_", " ")}
-            </span>
-          </p>
-          {user.is_blocked && user.blocked_reason && (
-            <p>
-              <strong className="text-gray-700">Blocked Reason:</strong>{" "}
-              {user.blocked_reason}
+        {/* User Details Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <p className="text-gray-600">
+              <strong>Email:</strong> {user.email}
             </p>
-          )}
-          {user.blocked_at && (
-            <p>
-              <strong className="text-gray-700">Blocked At:</strong>{" "}
-              {new Date(user.blocked_at).toLocaleString()}
+          </div>
+          <div>
+            <p className="text-gray-600">
+              <strong>Phone:</strong> {user.phone || "N/A"}
             </p>
-          )}
-          {isTrashed && user.deleted_reason && (
-            <p>
-              <strong className="text-gray-700">Deleted Reason:</strong>{" "}
-              {user.deleted_reason}
+          </div>
+          <div>
+            <p className="text-gray-600">
+              <strong>Status:</strong> {user.status}
             </p>
-          )}
-          {isTrashed && (
-            <p>
-              <strong className="text-gray-700">Deleted At:</strong>{" "}
-              {new Date(user.deleted_at).toLocaleString()}
-            </p>
-          )}
-          {user.last_login_at && (
-            <p>
-              <strong className="text-gray-700">Last Login:</strong>{" "}
-              {new Date(user.last_login_at).toLocaleString()}
-            </p>
-          )}
-          {user.last_login_ip && (
-            <p>
-              <strong className="text-gray-700">Last Login IP:</strong>{" "}
-              {user.last_login_ip}
-            </p>
-          )}
-          {user.created_at && (
-            <p>
-              <strong className="text-gray-700">Registered On:</strong>{" "}
+          </div>
+          <div>
+            <p className="text-gray-600">
+              <strong>Joined:</strong>{" "}
               {new Date(user.created_at).toLocaleDateString()}
             </p>
-          )}
+          </div>
+          <div className="md:col-span-2">
+            <p className="text-gray-600">
+              <strong>Address:</strong> {user.address || "N/A"}
+            </p>
+          </div>
         </div>
 
-        <div className="mt-8 flex flex-wrap justify-end gap-3">
-          {/* Action Buttons based on User Status */}
-          {!user.is_admin &&
-            !isTrashed &&
-            user.status === "pending_approval" && (
-              <button
-                onClick={() => onApprove(user.id)}
-                className="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition-colors"
-              >
-                Approve User
-              </button>
-            )}
+        {/* Conditional Reason Display */}
+        {user.is_blocked && user.blocked_reason && (
+          <div className="bg-red-50 p-3 rounded-md mb-4">
+            <p className="text-sm text-red-700">
+              <strong>Blocked Reason:</strong> {user.blocked_reason}
+            </p>
+          </div>
+        )}
+        {user.deleted_at && user.deleted_reason && (
+          <div className="bg-gray-100 p-3 rounded-md mb-4">
+            <p className="text-sm text-gray-700">
+              <strong>Deletion Reason:</strong> {user.deleted_reason}
+            </p>
+          </div>
+        )}
 
-          {!user.is_admin &&
-            !isTrashed &&
-            !user.is_blocked &&
-            user.status === "active" && (
-              <button
-                onClick={() => onBlock(user)}
-                className="px-4 py-2 bg-yellow-600 text-white font-semibold rounded-md hover:bg-yellow-700 transition-colors"
-              >
-                Block User
-              </button>
+        {/* Login History Section */}
+        <div className="mt-4">
+          <h4 className="font-bold text-gray-700 mb-2">
+            Recent Login History (Last 5)
+          </h4>
+          <div className="border rounded-md max-h-48 overflow-y-auto">
+            {loadingHistory ? (
+              <p className="p-3 text-gray-500">Loading history...</p>
+            ) : (
+              <ul className="divide-y divide-gray-200">
+                {history.length > 0 ? (
+                  history.map((log) => (
+                    <li
+                      key={log.id}
+                      className="p-3 flex justify-between items-center"
+                    >
+                      <span className="text-sm text-gray-600">
+                        {new Date(log.login_at).toLocaleString()}
+                      </span>
+                      <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                        {log.ip_address}
+                      </span>
+                    </li>
+                  ))
+                ) : (
+                  <p className="p-3 text-gray-500">No login history found.</p>
+                )}
+              </ul>
             )}
+          </div>
+        </div>
 
-          {!user.is_admin && !isTrashed && user.is_blocked && (
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2 justify-center mt-6">
+          {user.status === "pending_approval" && (
             <button
-              onClick={() => onUnblock(user.id)}
-              className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition-colors"
+              onClick={() => onAction("approve", user.id)}
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
             >
-              Unblock User
+              Approve
             </button>
           )}
-
-          {/* Show Soft Delete for active, blocked, pending users (if not already trashed) */}
-          {!user.is_admin &&
-            !isTrashed &&
-            (user.status === "active" ||
-              user.status === "blocked" ||
-              user.status === "pending_approval") && (
-              <button
-                onClick={() => onSoftDelete(user)}
-                className="px-4 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 transition-colors"
-              >
-                Soft Delete
-              </button>
-            )}
-
-          {!user.is_admin && isTrashed && (
+          {!user.is_blocked && !user.deleted_at && user.status === "active" && (
             <button
-              onClick={() => onRestore(user.id)}
-              className="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition-colors"
+              onClick={() => onAction("block", user.id)}
+              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              Block
+            </button>
+          )}
+          {user.is_blocked && !user.deleted_at && (
+            <button
+              onClick={() => onAction("unblock", user.id)}
+              className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+            >
+              Unblock
+            </button>
+          )}
+          {!user.deleted_at && (
+            <button
+              onClick={() => onAction("soft-delete", user.id)}
+              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+            >
+              Delete
+            </button>
+          )}
+          {user.deleted_at && (
+            <button
+              onClick={() => onAction("restore", user.id)}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
               Restore
             </button>
           )}
+        </div>
 
-          {!user.is_admin && isTrashed && (
-            <button
-              onClick={() => onForceDelete(user.id)}
-              className="px-4 py-2 bg-red-800 text-white font-semibold rounded-md hover:bg-red-900 transition-colors"
-            >
-              Force Delete
-            </button>
-          )}
-
+        {/* Close Button */}
+        <div className="mt-6 text-right">
           <button
             onClick={onClose}
-            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
           >
             Close
           </button>

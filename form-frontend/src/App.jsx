@@ -1,48 +1,70 @@
-// form-frontend/src/App.jsx
 import React, { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
-} from "react-router-dom"; //
-import api from "./api"; //
-import AuthPage from "./AuthPage"; //
-import AdminDashboard from "./AdminDashboard"; //
-import UserDashboard from "./UserDashboard"; //
-import AdminLogin from "./AdminLogin"; //
+  Outlet,
+} from "react-router-dom";
+import api from "./api";
+
+// Import all page components
+import AuthPage from "./AuthPage";
+import AdminLogin from "./AdminLogin";
+import AdminDashboard from "./AdminDashboard";
+import UserDashboard from "./UserDashboard";
+import UserManagement from "./UserManagement";
+import AdminManagement from "./AdminManagement"; // Import the new Admin Management component
+
+// This is a helper component to protect routes based on login status and role
+const ProtectedRoute = ({ isAllowed, redirectPath = "/login", children }) => {
+  if (!isAllowed) {
+    return <Navigate to={redirectPath} replace />;
+  }
+  // The <Outlet /> component is used to render nested routes
+  return children ? children : <Outlet />;
+};
 
 function App() {
-  const [user, setUser] = useState(null); //
-  const [loading, setLoading] = useState(true); //
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  // Check for an authenticated user on initial application load
   useEffect(() => {
-    //
     api
-      .get("/api/user") //
-      .then((response) => setUser(response.data)) //
-      .catch(() => setUser(null)) //
-      .finally(() => setLoading(false)); //
-  }, []); //
+      .get("/api/user")
+      .then((response) => setUser(response.data))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleAuthSuccess = (userData) => {
-    //
-    setUser(userData); //
-  }; //
+    setUser(userData);
+    // After a successful login, navigate to the correct dashboard
+    if (userData.is_admin) {
+      window.location.href = "/admin/users";
+    } else {
+      window.location.href = "/dashboard";
+    }
+  };
 
   const handleLogout = async () => {
-    //
+    const wasAdmin = user?.is_admin;
     try {
-      //
-      await api.post("/api/logout"); //
+      await api.post("/api/logout");
+    } catch (error) {
+      console.error("Logout API call failed, but redirecting anyway:", error);
     } finally {
-      //
-      setUser(null); //
-    } //
-  }; //
+      setUser(null);
+      if (wasAdmin) {
+        window.location.href = "/admin/login";
+      } else {
+        window.location.href = "/login";
+      }
+    }
+  };
 
   if (loading) {
-    //
     return (
       <div className="flex items-center justify-center min-h-screen">
         Loading...
@@ -53,81 +75,76 @@ function App() {
   return (
     <div className="antialiased bg-slate-100">
       <Router>
-        {" "}
-        {/* */}
         <Routes>
-          {" "}
-          {/* */}
-          {/* If user is authenticated */}
-          {user ? ( //
-            <>
-              {user.is_admin ? ( //
-                <Route
-                  path="/admin/*"
-                  element={
-                    <AdminDashboard user={user} onLogout={handleLogout} />
-                  }
-                /> //
+          {/* Public Routes (for users who are not logged in) */}
+          <Route
+            path="/login"
+            element={
+              !user ? (
+                <AuthPage onAuthSuccess={handleAuthSuccess} />
               ) : (
-                <Route
-                  path="/dashboard"
-                  element={
-                    <UserDashboard user={user} onLogout={handleLogout} />
-                  }
-                /> //
-              )}
-              {/* Redirect authenticated users from login pages */}
-              <Route
-                path="/login"
-                element={
-                  <Navigate
-                    to={user.is_admin ? "/admin" : "/dashboard"}
-                    replace
-                  />
-                }
-              />{" "}
-              {/* */}
-              <Route
-                path="/admin/login"
-                element={<Navigate to="/admin" replace />}
-              />{" "}
-              {/* */}
-              <Route
-                path="/"
-                element={
-                  <Navigate
-                    to={user.is_admin ? "/admin" : "/dashboard"}
-                    replace
-                  />
-                }
-              />{" "}
-              {/* */}
-            </>
-          ) : (
-            // If user is not authenticated
-            <>
-              <Route
-                path="/login"
-                element={<AuthPage onAuthSuccess={handleAuthSuccess} />}
-              />{" "}
-              {/* */}
-              <Route
-                path="/admin/login"
-                element={<AdminLogin onLogin={handleAuthSuccess} />}
-              />{" "}
-              {/* */}
-              {/* Redirect root to user login if not authenticated */}
-              <Route path="/" element={<Navigate to="/login" replace />} />{" "}
-              {/* */}
-              {/* Fallback for unknown paths when not authenticated, redirect to user login */}
-              <Route path="*" element={<Navigate to="/login" replace />} />{" "}
-              {/* */}
-            </>
-          )}
-        </Routes>{" "}
-        {/* */}
-      </Router>{" "}
-      {/* */}
+                <Navigate to={user.is_admin ? "/admin" : "/dashboard"} />
+              )
+            }
+          />
+          <Route
+            path="/admin/login"
+            element={
+              !user ? (
+                <AdminLogin onLogin={handleAuthSuccess} />
+              ) : (
+                <Navigate to="/admin" />
+              )
+            }
+          />
+
+          {/* Protected Route for Standard Users */}
+          <Route
+            element={
+              <ProtectedRoute
+                isAllowed={!!user && !user.is_admin}
+                redirectPath="/login"
+              />
+            }
+          >
+            <Route
+              path="/dashboard"
+              element={<UserDashboard user={user} onLogout={handleLogout} />}
+            />
+          </Route>
+
+          {/* Protected Routes for Admins (with nested pages) */}
+          <Route
+            element={
+              <ProtectedRoute
+                isAllowed={!!user && user.is_admin}
+                redirectPath="/admin/login"
+              />
+            }
+          >
+            <Route
+              path="/admin"
+              element={<AdminDashboard user={user} onLogout={handleLogout} />}
+            >
+              {/* These nested routes render inside AdminDashboard's <Outlet /> */}
+              <Route index element={<Navigate to="users" replace />} />
+              <Route path="users" element={<UserManagement />} />
+              <Route path="admins" element={<AdminManagement />} />
+            </Route>
+          </Route>
+
+          {/* Fallback Route: Redirects to the correct starting page */}
+          <Route
+            path="*"
+            element={
+              <Navigate
+                to={user ? (user.is_admin ? "/admin" : "/dashboard") : "/login"}
+                replace
+              />
+            }
+          />
+        </Routes>
+      </Router>
     </div>
   );
 }

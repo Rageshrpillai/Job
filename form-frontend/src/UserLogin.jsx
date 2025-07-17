@@ -29,18 +29,19 @@ function UserLogin({ onLogin }) {
         ) {
           setStatusModalMessage(
             <>
-              Your account is pending admin approval. Please wait for an
-              administrator to activate your account. If it takes longer than
-              usual, please contact us by email:{" "}
+              Your account is pending admin approval or has been blocked. Please
+              wait for an administrator to activate your account. If it takes
+              longer than usual, please contact us at{" "}
+              {/* **FIXED**: Changed the link to a specific Gmail URL */}
               <a
-                href="https://mail.google.com/mail/?view=cm&fs=1&to=admin@example.com" // Direct link to Gmail compose
-                target="_blank" // Open in new tab
-                rel="noopener noreferrer" // Security best practice for target="_blank"
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=admin@example.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-blue-600 hover:underline"
               >
                 admin@example.com
-              </a>{" "}
-              (This link attempts to open Gmail in your browser).
+              </a>
+              .
             </>
           );
           setShowStatusModal(true);
