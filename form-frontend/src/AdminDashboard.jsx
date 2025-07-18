@@ -1,7 +1,26 @@
 import React from "react";
-import { NavLink, Outlet } from "react-router-dom"; // Import NavLink and Outlet
+// Before: The original import included 'useNavigate'.
+// ** FIX: 'useNavigate' has been removed from this import statement. **
+import { NavLink, Outlet } from "react-router-dom";
+// After: The import statement is now clean.
 
 // --- Helper Components for Icons ---
+const DashboardIcon = () => (
+  <svg
+    className="w-6 h-6"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+    />
+  </svg>
+);
 const UsersIcon = () => (
   <svg
     className="w-6 h-6"
@@ -18,8 +37,6 @@ const UsersIcon = () => (
     />
   </svg>
 );
-
-// **NEW**: Icon for Role Management
 const RolesIcon = () => (
   <svg
     className="w-6 h-6"
@@ -31,12 +48,11 @@ const RolesIcon = () => (
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
-      strokeWidth="2"
+      strokeWidth={2}
       d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 012-2h4a2 2 0 012 2v1m-4 0h4"
     />
   </svg>
 );
-
 const LogoutIcon = () => (
   <svg
     className="w-6 h-6"
@@ -70,24 +86,42 @@ function AdminDashboard({ user, onLogout }) {
           Admin Panel
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
-          {/* **MODIFIED**: Changed button to NavLink */}
+          {/* The `end` prop ensures this link is only active on the exact /admin path */}
+          <NavLink
+            to="/admin"
+            end
+            style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition"
+          >
+            <DashboardIcon />
+            <span>Dashboard</span>
+          </NavLink>
+
           <NavLink
             to="/admin/users"
             style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-700"
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition"
           >
             <UsersIcon />
             <span>User Management</span>
           </NavLink>
 
-          {/* **NEW**: Added NavLink for Role Management */}
           <NavLink
             to="/admin/admins"
             style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-700"
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition"
           >
             <RolesIcon />
             <span>Admin Management</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/roles"
+            style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition"
+          >
+            <RolesIcon />
+            <span>Role Management</span>
           </NavLink>
         </nav>
         <div className="p-4 border-t border-slate-700">
@@ -101,14 +135,14 @@ function AdminDashboard({ user, onLogout }) {
         </div>
       </aside>
 
-      {/* **MODIFIED**: Main Content now uses an Outlet to render the active route's component */}
+      {/* Main Content now uses an Outlet to render the active route's component */}
       <main className="flex-1 p-10 overflow-y-auto">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-slate-900">
-            Welcome, {user.name}!
+            Welcome, {user?.name || "Admin"}!
           </h1>
         </header>
-        {/* The Outlet component from react-router-dom will render UserManagement or RoleManagement here */}
+        {/* The Outlet component from react-router-dom will render the correct page here */}
         <Outlet />
       </main>
     </div>

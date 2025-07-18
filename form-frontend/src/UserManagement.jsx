@@ -117,6 +117,16 @@ function UserManagement() {
       );
   };
 
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      // If the same column is clicked, toggle the direction
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // If a new column is clicked, set it as the sort column and default to ascending
+      setSortBy(column);
+      setSortDirection("asc");
+    }
+  };
   const handleAction = (action, userId, confirmationMessage = null) => {
     if (confirmationMessage && !window.confirm(confirmationMessage)) return;
 
@@ -245,6 +255,9 @@ function UserManagement() {
           selectedUserIds={selectedUserIds}
           onSelectUser={handleSelectUser}
           onSelectAll={handleSelectAll}
+          sortBy={sortBy}
+          sortDirection={sortDirection}
+          onSort={handleSort}
         />
       )}
 

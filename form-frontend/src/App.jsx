@@ -9,12 +9,14 @@ import {
 import api from "./api";
 
 // Import all page components
+import RoleManagement from "./RoleManagement";
 import AuthPage from "./AuthPage";
 import AdminLogin from "./AdminLogin";
 import AdminDashboard from "./AdminDashboard";
 import UserDashboard from "./UserDashboard";
 import UserManagement from "./UserManagement";
-import AdminManagement from "./AdminManagement"; // Import the new Admin Management component
+import AdminManagement from "./AdminManagement";
+import DashboardSummary from "./DashboardSummary";
 
 // This is a helper component to protect routes based on login status and role
 const ProtectedRoute = ({ isAllowed, redirectPath = "/login", children }) => {
@@ -42,7 +44,7 @@ function App() {
     setUser(userData);
     // After a successful login, navigate to the correct dashboard
     if (userData.is_admin) {
-      window.location.href = "/admin/users";
+      window.location.href = "/admin"; // Navigate to the main admin dashboard
     } else {
       window.location.href = "/dashboard";
     }
@@ -127,9 +129,15 @@ function App() {
               element={<AdminDashboard user={user} onLogout={handleLogout} />}
             >
               {/* These nested routes render inside AdminDashboard's <Outlet /> */}
-              <Route index element={<Navigate to="users" replace />} />
+
+              {/* This is the default page for /admin */}
+              <Route index element={<DashboardSummary />} />
+
               <Route path="users" element={<UserManagement />} />
               <Route path="admins" element={<AdminManagement />} />
+
+              {/* The path is now relative, which is correct */}
+              <Route path="roles" element={<RoleManagement />} />
             </Route>
           </Route>
 

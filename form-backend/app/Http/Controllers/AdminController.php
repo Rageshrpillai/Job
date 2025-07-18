@@ -209,6 +209,32 @@ class AdminController extends Controller
         return response()->json(['message' => 'User has been successfully restored.', 'user' => $user]);
     }
 
+
+
+
+       
+   Public function getDashboardStats()
+    {
+        // Before: The original `getDashboardStats` method was here.
+        // ** DEBUGGING STEP **
+        // The query for 'recent_logins' has been replaced with an empty array.
+        // If the dashboard loads after this change, it confirms the error is in
+        // the LoginHistory query.
+        
+        $stats = [
+            'pending_users' => User::where('status', 'pending_approval')->count(),
+            'new_users_weekly' => User::where('created_at', '>=', Carbon::now()->subDays(7))->count(),
+            'total_users' => User::count(),
+            'total_roles' => Role::count(),
+            'recent_logins' => [], // Temporarily return an empty array
+        ];
+
+        return response()->json($stats);
+        
+        // After: No other changes are needed in this file.
+    }
+
+
     public function forceDeleteUser($id)
     {
         $user = User::withTrashed()->find($id);

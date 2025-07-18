@@ -14,10 +14,14 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function run(): void
     {
+        // Before: The original run() method was here.
+        // The following code replaces the entire run() method.
+
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 1. Create Permissions
+        // ** THE FIX IS HERE **
+        // All permissions are now created with 'guard_name' => 'sanctum'
         $permissions = [
             'view-users', 'edit-users', 'delete-users', 'force-delete-users',
             'view-roles', 'manage-roles', 'assign-roles',
@@ -26,36 +30,34 @@ class RolesAndPermissionsSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            // Create permission if it doesn't exist
-            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'sanctum']); // Changed to sanctum
         }
 
-        // 2. Create Roles and Assign Permissions
+        // --- All roles are now created with 'guard_name' => 'sanctum' ---
         
         // Super Admin Role
-        $superAdminRole = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
-        // Assign all permissions to the Super Admin
+        $superAdminRole = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'sanctum']); // Changed to sanctum
         $superAdminRole->syncPermissions(Permission::all());
 
         // Administrator Role
-        $adminRole = Role::firstOrCreate(['name' => 'Administrator', 'guard_name' => 'web']);
+        $adminRole = Role::firstOrCreate(['name' => 'Administrator', 'guard_name' => 'sanctum']); // Changed to sanctum
         $adminRole->syncPermissions([
             'view-users', 'edit-users', 'delete-users',
             'view-user-details', 'view-login-history', 'assign-roles',
         ]);
 
         // Support Specialist Role
-        $supportRole = Role::firstOrCreate(['name' => 'Support Specialist', 'guard_name' => 'web']);
+        $supportRole = Role::firstOrCreate(['name' => 'Support Specialist', 'guard_name' => 'sanctum']); // Changed to sanctum
         $supportRole->syncPermissions([
             'view-users', 'view-user-details', 'view-login-history',
         ]);
         
-        // 3. Assign Super Admin role to the first admin user
-        // Find the first user marked as an admin
+        // Assign Super Admin role to the first admin user
         $adminUser = User::where('is_admin', true)->first();
         if($adminUser){
-            // Use syncRoles to safely assign the role. It removes old roles and adds the new ones.
             $adminUser->syncRoles(['Super Admin']);
         }
+        
+        // After: No changes after this method.
     }
 }
