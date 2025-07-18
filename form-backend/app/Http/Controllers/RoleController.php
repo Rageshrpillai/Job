@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
+use Illuminate\Support\Facades\DB; // <-- CORRECT IMPORT
+use Illuminate\Support\Facades\Log; 
 // REMOVED: use Illuminate\Support\Facades\Log;
 
 class RoleController extends Controller
@@ -72,22 +74,31 @@ class RoleController extends Controller
     /**
      * Remove the specified role from storage.
      */
-    public function destroy($id)
+   public function destroy($id)
     {
-        // Before: The version with logging code was here.
-        // **THIS IS THE FINAL, CLEAN VERSION**
-        // It correctly finds and deletes the role by its ID.
-        
         $role = Role::findOrFail($id);
+        Log::info("Attempting to delete role ID: {$id}.");
+        Log::info("Role details: " . json_encode($role->toArray()));
+        // Log::info("Role users count: " . $role->users()->count()); // Removed because it causes an error
+        Log::info("Role permissions: " . json_encode($role->permissions()->pluck('name')));
 
-        if ($role->name === 'Super Admin') {
-            return response()->json(['message' => 'Cannot delete the Super Admin role.'], 403);
+        DB::beginTransaction();
+        Log::info("Transaction started for role deletion.");
+
+        try {
+            $role->delete();
+            DB::commit();
+            Log::info("Role ID: {$id} deleted and transaction committed successfully.");
+            return response()->json(['message' => 'Role deleted successfully.']);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error("Failed to delete role ID: {$id}. Transaction rolled back.");
+            Log::error("Error: " . $e->getMessage());
+            Log::error("Stack Trace: " . $e->getTraceAsString());
+            // Removed: Log::error("Role users: " . json_encode($role->users()->pluck('id')));
+            Log::error("Role permissions: " . json_encode($role->permissions()->pluck('id')));
+            return response()->json(['message' => 'Failed to delete role.'], 500);
         }
-
-        $role->delete();
-
-        return response()->json(['message' => 'Role deleted successfully.']);
-        // After: No changes after this method.
     }
     
     public function assignRolesToUser(Request $request, User $user)

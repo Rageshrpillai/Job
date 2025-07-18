@@ -22,6 +22,13 @@ return [
          * `Spatie\Permission\Contracts\Role` contract.
          */
         'role' => Spatie\Permission\Models\Role::class,
+
+        /*
+         * This is the line that was added. It explicitly tells the package
+         * that your users are handled by the App\Models\User class.
+         */
+        'user' => App\Models\User::class, // ✨ THIS IS THE FIX
+
     ],
 
     'table_names' => [
@@ -83,9 +90,6 @@ return [
 
     'teams' => false,
     
-    // --- THIS IS THE CORRECTED SECTION ---
-    // The 'guard' is set to 'sanctum' to make it the default for your API.
-    // The duplicate 'defaults' block has been removed.
     'defaults' => [
         'guard' => 'sanctum',
     ],

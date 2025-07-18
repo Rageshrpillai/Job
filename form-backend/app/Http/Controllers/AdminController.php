@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\LoginHistory;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\DB; // <-- CORRECT IMPORT
+use Illuminate\Support\Facades\Log; 
 
 class AdminController extends Controller
 {
@@ -183,17 +185,37 @@ class AdminController extends Controller
         return response()->json(['message' => 'User has been successfully unblocked.', 'user' => $user]);
     }
 
-    public function softDeleteUser(User $user, Request $request)
+     public function softDeleteUser(Request $request, $id)
     {
-        $request->validate(['reason' => 'required|string|min:10']);
-        if ($user->is_admin) { return response()->json(['message' => 'Cannot delete an admin account.'], 403); }
-        if ($user->trashed()) { return response()->json(['message' => 'User is already soft-deleted.'], 422); }
-        $user->deleted_reason = $request->input('reason');
-        
-        $user->delete();
-        Log::info("User {$user->id} soft-deleted by admin. Reason: {$user->deleted_reason}");
-        return response()->json(['message' => 'User has been soft-deleted successfully.', 'user' => $user]);
+        $reason = $request->input('reason', 'No reason provided');
+
+        $user = User::withTrashed()->findOrFail($id);
+
+        DB::beginTransaction();
+        Log::info("Attempting to soft-delete user ID: {$user->id}. Transaction started.");
+
+        try {
+            Log::info("Executing delete() on user ID: {$user->id}.");
+            $user->delete();
+            // Save the deleted_reason after soft delete
+            $user->deleted_reason = $reason;
+            $user->save();
+            Log::info("Eloquent delete() method executed for user ID: {$user->id}.");
+
+            DB::commit();
+            Log::info("Transaction committed. User ID: {$user->id} should now be soft-deleted.");
+            Log::info("User {$user->id} soft-deleted by admin. Reason: {$reason}");
+
+            return response()->json(['message' => 'User soft-deleted successfully.']);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error("Failed to soft-delete user ID: {$user->id}. Transaction rolled back.");
+            Log::error("Error: " . $e->getMessage());
+            Log::error("Stack Trace: " . $e->getTraceAsString());
+            return response()->json(['message' => 'Failed to soft-delete user.'], 500);
+        }
     }
+
 
     public function restoreUser($id)
     {

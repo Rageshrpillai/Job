@@ -63,54 +63,62 @@ function UserLogin({ onLogin }) {
   };
 
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-xl w-full">
-      <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
-        User Login
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="text-sm font-medium text-gray-700 block mb-2">
-            Email Address
-          </label>
-          <input
-            type="email"
-            value={email}
-            autoComplete="email"
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-          />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+      <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
+        {/* Logo Placeholder */}
+        <div className="flex justify-center mb-6">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+            <span className="text-3xl font-bold text-blue-600">🔒</span>
+          </div>
         </div>
-        <div>
-          <label className="text-sm font-medium text-gray-700 block mb-2">
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-          />
-        </div>
-        {error && (
-          <p className="text-red-500 text-sm text-center pt-2">{error}</p>
-        )}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 mt-4 text-white bg-blue-600 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 transition-colors"
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
+          User Login
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-2">
+              Email Address
+            </label>
+            <input
+              type="email"
+              value={email}
+              autoComplete="email"
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-2">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            />
+          </div>
+          {error && (
+            <p className="text-red-500 text-sm text-center pt-2">{error}</p>
+          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 mt-4 text-white bg-blue-600 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 transition-colors"
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
 
-      {showStatusModal && (
-        <UserStatusModal
-          message={statusModalMessage}
-          onClose={handleCloseStatusModal}
-        />
-      )}
+        {showStatusModal && (
+          <UserStatusModal
+            message={statusModalMessage}
+            onClose={handleCloseStatusModal}
+          />
+        )}
+      </div>
     </div>
   );
 }
