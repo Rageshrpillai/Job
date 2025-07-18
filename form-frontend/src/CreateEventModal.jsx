@@ -15,6 +15,7 @@ function CreateEventModal({ isOpen, onClose, onEventCreated }) {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -55,6 +56,13 @@ function CreateEventModal({ isOpen, onClose, onEventCreated }) {
       })
       .finally(() => setLoading(false));
   };
+
+  const handlePreview = (e) => {
+    e.preventDefault();
+    setShowPreview(true);
+  };
+
+  const closePreview = () => setShowPreview(false);
 
   if (!isOpen) return null;
 
@@ -218,6 +226,13 @@ function CreateEventModal({ isOpen, onClose, onEventCreated }) {
               Cancel
             </button>
             <button
+              type="button"
+              onClick={handlePreview}
+              className="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 font-semibold"
+            >
+              Preview
+            </button>
+            <button
               type="submit"
               disabled={loading}
               className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold disabled:bg-indigo-400"
@@ -226,6 +241,58 @@ function CreateEventModal({ isOpen, onClose, onEventCreated }) {
             </button>
           </div>
         </form>
+        {/* Preview Modal */}
+        {showPreview && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-2xl p-0 w-full max-w-sm mx-auto relative overflow-hidden">
+              <button
+                onClick={closePreview}
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl z-10"
+              >
+                &times;
+              </button>
+              {/* Event Image */}
+              {(() => { const url = formData.main_image ? URL.createObjectURL(formData.main_image) : null; if (url) { console.log('[CreateEventModal Preview] Image URL:', url); } return null; })()}
+              {formData.main_image ? (
+                <img
+                  src={URL.createObjectURL(formData.main_image)}
+                  alt="Event Preview"
+                  className="w-full h-48 object-cover"
+                />
+              ) : (
+                <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-400">
+                  No image selected
+                </div>
+              )}
+              <div className="p-4">
+                <h3 className="text-xl font-bold mb-2 text-purple-900">
+                  {formData.title || "(No Title)"}
+                </h3>
+                <p className="text-gray-700 mb-2 line-clamp-3">
+                  {formData.description || "(No Description)"}
+                </p>
+                <div className="mb-2">
+                  <span className="font-semibold text-sm text-gray-700">Event Organizer:</span>{" "}
+                  <span className="text-purple-700 font-semibold">(You)</span>
+                </div>
+                <div className="flex items-center text-green-700 text-sm mb-1">
+                  <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  {formData.start_time ? new Date(formData.start_time).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : "No start time"}
+                </div>
+                <div className="flex items-center text-blue-700 text-sm mb-1">
+                  <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 12.414a4 4 0 10-1.414 1.414l4.243 4.243a1 1 0 001.414-1.414z" /></svg>
+                  {formData.venue || "No venue"}
+                </div>
+                <div className="flex items-center text-gray-600 text-xs mt-2">
+                  <span>Type: {formData.event_type}</span>
+                  {formData.max_attendees && (
+                    <span className="ml-4">Max Attendees: {formData.max_attendees}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

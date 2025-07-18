@@ -33,13 +33,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', fn(Request $request) => $request->user());
 
+    Route::get('/dashboard-stats', [AuthController::class, 'getDashboardStats']);
     // --- Sub-User Management Routes ---
     Route::get('/sub-users', [SubUserController::class, 'index']);
     Route::post('/sub-users', [SubUserController::class, 'store']);
 
     // --- Event & Ticket Management Routes for Organizers ---
+    Route::get('/roles', [RoleController::class, 'index']);
+    Route::get('/events', [EventController::class, 'index']);
     Route::post('/events', [EventController::class, 'store']);
     Route::post('/events/{event}/tickets', [TicketController::class, 'store']);
+    Route::put('/events/{event}', [EventController::class, 'update']);
 
 
     // ===============================================================

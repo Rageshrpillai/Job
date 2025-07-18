@@ -1,103 +1,93 @@
-import React, { useState } from "react";
-import { Outlet } from "react-router-dom";
-import SubUserManagement from "./SubUserManagement";
-import CreateEventModal from "./CreateEventModal";
+// File: src/UserDashboard.jsx
+// This is the complete, corrected code for this file.
+// It REPLACES the previous version entirely.
 
-// --- Icon Helper Component ---
-const LogoutIcon = () => (
-  <svg
-    className="w-6 h-6"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-    />
-  </svg>
-);
+// What's new:
+// 1. Correct NavLink 'to' paths: Changed from "/user-dashboard" to "/dashboard" to match your App.jsx routes.
+// 2. Added a Logout button at the bottom of the sidebar. It calls the 'onLogout' function passed from App.jsx.
+// 3. Passed the 'user' prop to display the user's name.
 
-function UserDashboard({ user, onLogout }) {
-  // Check if the user is an organizer (or any type other than individual)
-  const isOrganizer =
-    user?.organization_type && user.organization_type !== "individual";
+import React from "react";
+import { NavLink, Outlet } from "react-router-dom";
+import { PowerIcon, UserCircleIcon } from "@heroicons/react/24/outline"; // Using icons for a better UI
 
-  // State to control the visibility of the "Create Event" modal
-  const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+const UserDashboard = ({ user, onLogout }) => {
+  // These styles help indicate the active page
+  const linkClasses =
+    "flex items-center gap-3 px-4 py-2.5 rounded-lg transition duration-200";
+  const activeLinkClasses = "bg-indigo-700 text-white font-semibold";
+  const inactiveLinkClasses =
+    "text-indigo-100 hover:bg-indigo-500 hover:text-white";
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-100 font-sans">
       {/* Sidebar Navigation */}
-      <aside className="w-64 bg-gray-800 text-gray-300 flex flex-col flex-shrink-0">
-        <div className="p-6 text-2xl font-bold text-white border-b border-gray-700">
-          {user?.company_name || "My Dashboard"}
+      <div className="w-64 bg-indigo-800 text-white flex flex-col">
+        <div className="px-4 py-5 text-2xl font-bold border-b border-indigo-700">
+          My Dashboard
         </div>
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          {/* We will add navigation links here in the future for different sections */}
-          {/* like Analytics, Events List, etc. */}
+
+        {/* Navigation Links */}
+        <nav className="flex-grow p-2 space-y-1">
+          <NavLink
+            to="/dashboard"
+            end // 'end' ensures this link is only active on the exact path
+            className={({ isActive }) =>
+              `${linkClasses} ${
+                isActive ? activeLinkClasses : inactiveLinkClasses
+              }`
+            }
+          >
+            Analysis
+          </NavLink>
+          <NavLink
+            to="/dashboard/events"
+            className={({ isActive }) =>
+              `${linkClasses} ${
+                isActive ? activeLinkClasses : inactiveLinkClasses
+              }`
+            }
+          >
+            Events
+          </NavLink>
+          <NavLink
+            to="/dashboard/sub-users"
+            className={({ isActive }) =>
+              `${linkClasses} ${
+                isActive ? activeLinkClasses : inactiveLinkClasses
+              }`
+            }
+          >
+            Sub-Users
+          </NavLink>
         </nav>
-        <div className="p-4 border-t border-gray-700">
+
+        {/* User Info and Logout Button */}
+        <div className="p-4 border-t border-indigo-700">
+          <div className="flex items-center gap-3 mb-4">
+            <UserCircleIcon className="h-10 w-10 text-indigo-300" />
+            <div>
+              <p className="font-semibold text-white">{user?.name}</p>
+              <p className="text-sm text-indigo-300">{user?.email}</p>
+            </div>
+          </div>
           <button
             onClick={onLogout}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-red-500 rounded-md text-white font-semibold transition-colors duration-200"
           >
-            <LogoutIcon />
+            <PowerIcon className="h-5 w-5" />
             <span>Logout</span>
           </button>
         </div>
-      </aside>
+      </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 sm:p-10">
-        <header className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Welcome, {user?.name}!
-            </h1>
-            <p className="text-gray-500 mt-1">
-              Here's what's happening with your organization today.
-            </p>
-          </div>
-          {/* The "Create New Event" button is only shown to organizers */}
-          {isOrganizer && (
-            <button
-              onClick={() => setShowCreateEventModal(true)}
-              className="px-5 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold shadow-md transition"
-            >
-              + Create New Event
-            </button>
-          )}
-        </header>
-
-        {/* Conditionally render the Team Management section for organizers */}
-        {isOrganizer ? (
-          <SubUserManagement />
-        ) : (
-          <div className="p-6 bg-white rounded-lg shadow-md">
-            <p>
-              Welcome to your dashboard. Future features for your account type
-              will appear here.
-            </p>
-          </div>
-        )}
+      <main className="flex-1 overflow-y-auto">
+        {/* The Outlet component renders the matched child route component */}
+        <Outlet />
       </main>
-
-      {/* The Create Event Modal, which is controlled by the state above */}
-      <CreateEventModal
-        isOpen={showCreateEventModal}
-        onClose={() => setShowCreateEventModal(false)}
-        onEventCreated={() => {
-          // This function is called when an event is created successfully.
-          // Later, we can add logic here to automatically refresh an event list.
-          console.log("Event created successfully!");
-        }}
-      />
     </div>
   );
-}
+};
 
 export default UserDashboard;

@@ -17,6 +17,9 @@ import UserDashboard from "./UserDashboard";
 import UserManagement from "./UserManagement";
 import AdminManagement from "./AdminManagement";
 import DashboardSummary from "./DashboardSummary";
+import AnalysisPage from "./AnalysisPage";
+import EventManagementPage from "./EventManagementPage";
+import SubUserManagementPage from "./SubUserManagementPage";
 
 // This is a helper component to protect routes based on login status and role
 const ProtectedRoute = ({ isAllowed, redirectPath = "/login", children }) => {
@@ -100,7 +103,7 @@ function App() {
             }
           />
 
-          {/* Protected Route for Standard Users */}
+          {/* Protected Routes for Standard Users (with nested pages) */}
           <Route
             element={
               <ProtectedRoute
@@ -112,7 +115,14 @@ function App() {
             <Route
               path="/dashboard"
               element={<UserDashboard user={user} onLogout={handleLogout} />}
-            />
+            >
+              {/* Default page for /dashboard */}
+              <Route index element={<AnalysisPage />} />
+
+              {/* Other user dashboard pages */}
+              <Route path="events" element={<EventManagementPage />} />
+              <Route path="sub-users" element={<SubUserManagementPage />} />
+            </Route>
           </Route>
 
           {/* Protected Routes for Admins (with nested pages) */}

@@ -53,4 +53,43 @@ class SubUserController extends Controller
 
         return response()->json($subUser, 201);
     }
+
+
+
+    public function performAction(Request $request, $id)
+    {
+        $request->validate([
+            'action' => 'required|string|in:block,remove,delete',
+        ]);
+
+        $organizer = auth()->user();
+        
+        // Use withTrashed to find the user even if they have been soft-deleted (removed)
+        $subUser = User::withTrashed()->where('id', $id)
+                                      ->where('parent_id', $organizer->id)
+                                      ->firstOrFail();
+
+        switch ($request->action) {
+            case 'block':
+                $subUser->is_blocked = !$subUser->is_blocked;
+                $subUser->save();
+                break;
+            case 'remove':
+                // Soft delete or restore
+                if ($subUser->trashed()) {
+                    $subUser->restore();
+                } else {
+                    $subUser->delete();
+                }
+                break;
+            case 'delete':
+                // Permanent deletion
+                $subUser->forceDelete();
+                return response()->json(['message' => 'User permanently deleted']);
+        }
+        
+        // We need to reload the role relationship to return it in the response
+        $subUser->load('roles');
+        return response()->json($subUser);
+    }
 }

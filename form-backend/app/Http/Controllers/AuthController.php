@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -37,6 +38,29 @@ class AuthController extends Controller
         $user = User::create($data);
         return response()->json($user, 201);
     }
+
+
+
+     public function getDashboardStats(Request $request)
+    {
+        $user = $request->user();
+
+        // Count the number of events created by this user
+        $eventCount = DB::table('events')->where('user_id', $user->id)->count();
+
+        // Count the number of sub-users linked to this user
+        $subUserCount = DB::table('users')->where('parent_id', $user->id)->count();
+
+        // Placeholder for ticket sales - you can implement this logic later
+        $ticketCount = 0; // To be implemented
+
+        return response()->json([
+            'events' => $eventCount,
+            'tickets' => $ticketCount,
+            'subUsers' => $subUserCount,
+        ]);
+    }
+
 
     public function login(Request $request)
     {
