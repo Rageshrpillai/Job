@@ -78,6 +78,7 @@ function UserRegister({ onRegisterSuccess }) {
             <option value="corporate">Corporate</option>
             <option value="company">Company</option>
             <option value="non-profit">Non-profit</option>
+            <option value="event-organizer">Event Organizer</option>
           </select>
 
           {isCompany ? (

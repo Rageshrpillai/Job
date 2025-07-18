@@ -19,7 +19,8 @@ class AdminController extends Controller
     {
         Log::info('AdminController@index called with adminOnly=' . ($adminOnly ? 'true' : 'false'));
 
-        $sortableColumns = ['name', 'email', 'created_at', 'address'];
+          $sortableColumns = ['name', 'email', 'created_at', 'address', 'phone'];
+        //sorting
         $sortBy = $request->input('sort_by', 'created_at');
         $sortDirection = $request->input('sort_direction', 'desc');
         if (!in_array($sortBy, $sortableColumns)) {
@@ -27,7 +28,7 @@ class AdminController extends Controller
         }
 
         // The base query now depends on the $adminOnly flag and eager-loads relationships
-        $query = User::query()->where('is_admin', $adminOnly)->with('latestLogin', 'roles');
+         $query = User::select('users.*')->where('is_admin', $adminOnly)->with('latestLogin', 'roles');
 
         // Apply search filter
         if ($request->filled('search')) {
@@ -188,7 +189,7 @@ class AdminController extends Controller
         if ($user->is_admin) { return response()->json(['message' => 'Cannot delete an admin account.'], 403); }
         if ($user->trashed()) { return response()->json(['message' => 'User is already soft-deleted.'], 422); }
         $user->deleted_reason = $request->input('reason');
-        $user->save();
+        
         $user->delete();
         Log::info("User {$user->id} soft-deleted by admin. Reason: {$user->deleted_reason}");
         return response()->json(['message' => 'User has been soft-deleted successfully.', 'user' => $user]);

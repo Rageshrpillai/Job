@@ -13,18 +13,21 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        $request->validate([
-            'first_name' => 'required_if:organization_type,individual,non-profit|nullable|string|max:255',
-            'last_name' => 'required_if:organization_type,individual,non-profit|nullable|string|max:255',
+         $request->validate([
+            'first_name' => 'required_if:organization_type,individual,non-profit,event-organizer|nullable|string|max:255',
+            'last_name' => 'required_if:organization_type,individual,non-profit,event-organizer|nullable|string|max:255',
             'company' => 'required_if:organization_type,corporate,company|nullable|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'organization_type' => 'required|string|in:individual,corporate,company,non-profit',
+            'organization_type' => 'required|string|in:individual,corporate,company,non-profit,event-organizer',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
         ]);
 
         $data = $request->all();
+
+          $data['is_admin'] = false;
+          
         if ($request->organization_type === 'corporate' || $request->organization_type === 'company') {
             $data['name'] = $request->company;
         } else {

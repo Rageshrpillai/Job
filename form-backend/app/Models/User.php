@@ -2,23 +2,34 @@
 
 namespace App\Models;
 
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; // Corrected from App\Models\HasApiTokens
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
-    // Make sure 'HasApiTokens' is included in the 'use' statement below
     use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes;
 
-    // This tells the User model to always use 'sanctum' for roles and permissions.
+    /**
+     * The guard name for the model.
+     *
+     * @var string
+     */
     protected $guard_name = 'sanctum';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
-        'name', // Keep original name for simplicity, or use accessor below
+        'name',
         'first_name',
         'last_name',
         'company',
@@ -26,42 +37,62 @@ class User extends Authenticatable
         'email',
         'password',
         'phone',
-        'address',
-        'is_admin',
+        'address', // ** THIS WAS THE MISSING FIELD **
+        'parent_id',
         'status',
-        'status_reason',
-        'is_blocked',
-        'blocked_at',
-        'blocked_reason',
-        'deleted_reason',
-        'last_login_at',
-        'last_login_ip'
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'last_login_at' => 'datetime',
+        'is_admin' => 'boolean',
+        'is_blocked' => 'boolean',
     ];
     
-    // This accessor smartly combines names for display elsewhere in your app.
-    public function getFullNameAttribute()
+    /**
+     * Get the parent user (the organizer that this user belongs to).
+     */
+    public function parent(): BelongsTo
     {
-        if ($this->organization_type === 'corporate' || $this->organization_type === 'company') {
-            return $this->company;
-        }
-        return trim($this->first_name . ' ' . $this->last_name);
+        return $this->belongsTo(User::class, 'parent_id');
     }
 
-    public function latestLogin()
+    /**
+     * Get all sub-users associated with this user (if this user is an organizer).
+     */
+    public function subUsers(): HasMany
+    {
+        return $this->hasMany(User::class, 'parent_id');
+    }
+
+    /**
+     * Get all login history records for the user.
+     */
+    public function loginHistories(): HasMany
+    {
+        return $this->hasMany(LoginHistory::class);
+    }
+
+    /**
+     * Get the user's most recent login record.
+     */
+    public function latestLogin(): HasOne
     {
         return $this->hasOne(LoginHistory::class)->latestOfMany('login_at');
-    }
-
-    public function loginHistories()
-    {
-        return $this->hasMany(LoginHistory::class)->orderBy('login_at', 'desc');
     }
 }
