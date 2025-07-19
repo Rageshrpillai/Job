@@ -20,6 +20,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+
+      "/storage": {
+        target: "https://form-backend.test",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });
