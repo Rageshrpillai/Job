@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-
+use Spatie\Permission\Models\Role;
 class SubUserController extends Controller
 {
     /**
@@ -15,7 +15,7 @@ class SubUserController extends Controller
     public function index()
     {
         $parentUser = Auth::user();
-        $subUsers = $parentUser->subUsers()->get();
+          $subUsers = $parentUser->subUsers()->with('roles')->get(); // Eager load roles
         return response()->json($subUsers);
     }
 
@@ -51,45 +51,63 @@ class SubUserController extends Controller
             'status' => 'active',
         ]);
 
+
+
+         $subUser->assignRole('Sub-User');
         return response()->json($subUser, 201);
     }
 
 
-
-    public function performAction(Request $request, $id)
+  public function assignRole(Request $request, User $user)
     {
-        $request->validate([
-            'action' => 'required|string|in:block,remove,delete',
+        // Validation: Ensure the role exists
+        $validated = $request->validate([
+            'role' => 'required|string|exists:roles,name',
         ]);
 
-        $organizer = auth()->user();
-        
-        // Use withTrashed to find the user even if they have been soft-deleted (removed)
-        $subUser = User::withTrashed()->where('id', $id)
-                                      ->where('parent_id', $organizer->id)
-                                      ->firstOrFail();
-
-        switch ($request->action) {
-            case 'block':
-                $subUser->is_blocked = !$subUser->is_blocked;
-                $subUser->save();
-                break;
-            case 'remove':
-                // Soft delete or restore
-                if ($subUser->trashed()) {
-                    $subUser->restore();
-                } else {
-                    $subUser->delete();
-                }
-                break;
-            case 'delete':
-                // Permanent deletion
-                $subUser->forceDelete();
-                return response()->json(['message' => 'User permanently deleted']);
+        // Security Check: CRITICAL!
+        // Ensure the user being modified is a sub-user of the authenticated user.
+        if ($user->parent_id !== Auth::id()) {
+            return response()->json(['message' => 'Unauthorized. You can only assign roles to your own sub-users.'], 403);
         }
-        
-        // We need to reload the role relationship to return it in the response
-        $subUser->load('roles');
-        return response()->json($subUser);
+
+        // Assign the role
+        $user->syncRoles($validated['role']);
+
+        return response()->json(['message' => 'Role assigned successfully.']);
+    }
+    public function performAction(Request $request, User $user)
+    {
+        // Validate the incoming request
+        $validated = $request->validate([
+            'action' => 'required|string|in:block,unblock,remove',
+            'reason' => 'nullable|string|max:255',
+        ]);
+
+        // CRITICAL: Security check to ensure the user is a sub-user
+        if ($user->parent_id !== Auth::id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $action = $validated['action'];
+        $reason = $validated['reason'] ?? 'No reason provided.';
+
+        switch ($action) {
+            case 'block':
+                $user->status = 'blocked';
+                // You would typically log the reason here
+                $user->save();
+                return response()->json(['message' => 'User has been blocked.']);
+            case 'unblock':
+                $user->status = 'active';
+                $user->save();
+                return response()->json(['message' => 'User has been unblocked.']);
+            case 'remove':
+                // We use soft delete, so the user record is kept but marked as deleted
+                $user->delete();
+                return response()->json(['message' => 'User has been removed.']);
+        }
+
+        return response()->json(['message' => 'Invalid action.'], 400);
     }
 }

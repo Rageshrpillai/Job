@@ -12,6 +12,30 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+
+
+
+
+/**
+ * --- ADD THIS ENTIRE COMMENT BLOCK ---
+ *
+ * @property int $id
+ * @property string $name
+ * @property string|null $first_name
+ * @property string|null $last_name
+ * @property string|null $company
+ * @property string|null $organization_type
+ * @property string $email
+ * @property string|null $phone
+ * @property string|null $address
+ * @property string $status
+ * @property bool $is_admin
+ * @property bool $is_blocked
+ * @property int|null $parent_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ */
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes;

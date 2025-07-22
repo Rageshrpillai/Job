@@ -19,11 +19,10 @@ class EventController extends Controller
     public function index(Request $request)
     {
         // Get the currently authenticated user
-        $user = $request->user();
+        $userId = Auth::id();
 
         // Fetch events WHERE the 'user_id' column matches the authenticated user's ID.
-        // This is the line that fetches the list for the Manage Events page.
-        $events = Event::where('user_id', $user->id)->latest()->get();
+        $events = Event::where('user_id', $userId)->latest()->get();
 
         // Return the filtered events as a JSON response.
         return response()->json($events);

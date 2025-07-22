@@ -36,6 +36,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard-stats', [AuthController::class, 'getDashboardStats']);
     // --- Sub-User Management Routes ---
     Route::get('/sub-users', [SubUserController::class, 'index']);
+    Route::post('/sub-users/{user}/assign-role', [SubUserController::class, 'assignRole']);
+    Route::post('/sub-users/{user}/action', [SubUserController::class, 'performAction']);
     Route::post('/sub-users', [SubUserController::class, 'store']);
 
     // --- Event & Ticket Management Routes for Organizers ---

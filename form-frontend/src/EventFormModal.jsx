@@ -1,8 +1,8 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import api from "./api";
 import { Editor } from "@tinymce/tinymce-react";
 
-const AddEvent = () => {
+const EventFormModal = ({ isOpen, onClose, onSubmitSuccess, eventData }) => {
   const [formData, setFormData] = useState({
     event_name: "",
     event_date: "",
@@ -13,14 +13,43 @@ const AddEvent = () => {
     zip_code: "",
     event_type: "in-person",
     ticket_status: "non-ticketed",
-    category: "",
-    max_attendees: "",
   });
 
   const [description, setDescription] = useState("");
   const [mainImage, setMainImage] = useState(null);
+  const isEditMode = Boolean(eventData);
   const [photoPreview, setPhotoPreview] = useState("");
   const fileInputRef = useRef(null);
+  useEffect(() => {
+    if (isOpen && isEditMode) {
+      const venueParts = eventData.venue
+        ? eventData.venue.split(", ")
+        : ["", ""];
+      const location = venueParts[0];
+      const stateZip = venueParts[1] ? venueParts[1].split(" ") : ["", ""];
+      const state = stateZip[0];
+      const zip_code = stateZip[1];
+
+      const startDate = eventData.start_time
+        ? new Date(eventData.start_time)
+        : null;
+      const endDate = eventData.end_time ? new Date(eventData.end_time) : null;
+
+      setFormData({
+        event_name: eventData.title || "",
+        event_date: startDate ? startDate.toISOString().split("T")[0] : "",
+        event_start_time: startDate ? startDate.toTimeString().slice(0, 5) : "",
+        event_end_time: endDate ? endDate.toTimeString().slice(0, 5) : "",
+        location: location || "",
+        state: state || "",
+        zip_code: zip_code || "",
+        event_type: eventData.event_type || "in-person",
+        ticket_status: "non-ticketed", // This field is not on the backend, so we default it
+      });
+      setDescription(eventData.description || "");
+    }
+  }, [eventData, isOpen]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -30,7 +59,6 @@ const AddEvent = () => {
     const file = e.target.files[0];
     if (file) {
       setMainImage(file);
-      // Create a temporary URL for the selected file to use in the <img> tag
       setPhotoPreview(URL.createObjectURL(file));
     }
   };
@@ -43,7 +71,7 @@ const AddEvent = () => {
     e.preventDefault();
     const data = new FormData();
 
-    // Mapping frontend state to backend fields
+    // Mapping to backend fields
     data.append("title", formData.event_name);
     data.append("description", description);
     data.append(
@@ -59,34 +87,42 @@ const AddEvent = () => {
       `${formData.event_date} ${formData.event_end_time}`
     );
     data.append("event_type", formData.event_type);
-    data.append("category", formData.category);
-    data.append("max_attendees", formData.max_attendees);
 
     if (mainImage) {
       data.append("main_image", mainImage);
     }
+    data.append("_method", "PUT");
 
     try {
-      await api.post("/api/events", data, {
+      await api.post(`/api/events/${eventData.id}`, data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert("Event created successfully!");
+      alert("Event updated successfully!");
+      onSubmitSuccess();
     } catch (error) {
-      console.error("Error creating event:", error.response?.data);
-      alert("Failed to create event. Please check the form.");
+      console.error("Error updating event:", error.response?.data);
+      alert("Failed to update event.");
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="bg-white p-6 sm:p-10 rounded-b-2xl rounded-tr-2xl shadow-lg">
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-gray-900 mb-8">
-          Create a New Event
-        </h2>
-        <form className="space-y-6" onSubmit={handleSubmit}>
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center pb-4 border-b">
+          <h2 className="text-2xl font-bold text-gray-800">Edit Event</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-800 text-3xl"
+          >
+            &times;
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6 pt-4">
           <div>
             <label
-              htmlFor="event_name"
+              htmlFor="modal_event_name"
               className="block text-sm font-medium text-gray-700"
             >
               Event Name
@@ -94,7 +130,7 @@ const AddEvent = () => {
             <input
               type="text"
               name="event_name"
-              id="event_name"
+              id="modal_event_name"
               required
               value={formData.event_name}
               onChange={handleChange}
@@ -104,36 +140,22 @@ const AddEvent = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Event Photo
+              Update Image (Optional)
             </label>
             <div className="mt-1 flex items-center space-x-4">
-              {/* This part conditionally renders the preview or a placeholder */}
+              {/* Conditionally render preview or placeholder */}
               {photoPreview ? (
                 <img
                   src={photoPreview}
-                  alt="Event Preview"
+                  alt="New Preview"
                   className="h-24 w-24 object-cover rounded-lg"
                 />
               ) : (
                 <div className="h-24 w-24 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-10 w-10"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
+                  Preview
                 </div>
               )}
               <div>
-                {/* The actual file input is now hidden from the user */}
                 <input
                   type="file"
                   name="main_image"
@@ -141,19 +163,15 @@ const AddEvent = () => {
                   onChange={handleImageChange}
                   ref={fileInputRef}
                   className="hidden"
-                  id="main_image_upload"
+                  id="modal_main_image_upload"
                 />
-                {/* This styled button triggers the hidden file input */}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current.click()}
                   className="px-4 py-2 rounded-md border border-gray-300 text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50"
                 >
-                  Upload Photo
+                  Choose New Photo
                 </button>
-                <p className="text-xs text-gray-500 mt-2">
-                  PNG, JPG, GIF up to 500KB.
-                </p>
               </div>
             </div>
           </div>
@@ -161,7 +179,7 @@ const AddEvent = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label
-                htmlFor="event_date"
+                htmlFor="modal_event_date"
                 className="block text-sm font-medium text-gray-700"
               >
                 Date
@@ -169,7 +187,7 @@ const AddEvent = () => {
               <input
                 type="date"
                 name="event_date"
-                id="event_date"
+                id="modal_event_date"
                 required
                 value={formData.event_date}
                 onChange={handleChange}
@@ -178,7 +196,7 @@ const AddEvent = () => {
             </div>
             <div>
               <label
-                htmlFor="event_start_time"
+                htmlFor="modal_event_start_time"
                 className="block text-sm font-medium text-gray-700"
               >
                 Start Time
@@ -186,7 +204,7 @@ const AddEvent = () => {
               <input
                 type="time"
                 name="event_start_time"
-                id="event_start_time"
+                id="modal_event_start_time"
                 required
                 value={formData.event_start_time}
                 onChange={handleChange}
@@ -195,7 +213,7 @@ const AddEvent = () => {
             </div>
             <div>
               <label
-                htmlFor="event_end_time"
+                htmlFor="modal_event_end_time"
                 className="block text-sm font-medium text-gray-700"
               >
                 End Time
@@ -203,7 +221,7 @@ const AddEvent = () => {
               <input
                 type="time"
                 name="event_end_time"
-                id="event_end_time"
+                id="modal_event_end_time"
                 required
                 value={formData.event_end_time}
                 onChange={handleChange}
@@ -214,7 +232,7 @@ const AddEvent = () => {
 
           <div>
             <label
-              htmlFor="location"
+              htmlFor="modal_location"
               className="block text-sm font-medium text-gray-700"
             >
               Location / Address
@@ -222,7 +240,7 @@ const AddEvent = () => {
             <input
               type="text"
               name="location"
-              id="location"
+              id="modal_location"
               required
               value={formData.location}
               onChange={handleChange}
@@ -233,7 +251,7 @@ const AddEvent = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label
-                htmlFor="state"
+                htmlFor="modal_state"
                 className="block text-sm font-medium text-gray-700"
               >
                 State
@@ -241,7 +259,7 @@ const AddEvent = () => {
               <input
                 type="text"
                 name="state"
-                id="state"
+                id="modal_state"
                 required
                 value={formData.state}
                 onChange={handleChange}
@@ -250,7 +268,7 @@ const AddEvent = () => {
             </div>
             <div>
               <label
-                htmlFor="zip_code"
+                htmlFor="modal_zip_code"
                 className="block text-sm font-medium text-gray-700"
               >
                 Zip Code
@@ -258,7 +276,7 @@ const AddEvent = () => {
               <input
                 type="text"
                 name="zip_code"
-                id="zip_code"
+                id="modal_zip_code"
                 required
                 value={formData.zip_code}
                 onChange={handleChange}
@@ -267,6 +285,7 @@ const AddEvent = () => {
             </div>
           </div>
 
+          {/* This is the NEW code to ADD to the modal form */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -280,9 +299,9 @@ const AddEvent = () => {
                     value="in-person"
                     checked={formData.event_type === "in-person"}
                     onChange={handleChange}
-                    className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                    className="form-radio h-4 w-4 text-indigo-600"
                   />
-                  <span className="ml-2 text-sm text-gray-700">In-Person</span>
+                  <span className="ml-2 text-sm">In-Person</span>
                 </label>
                 <label className="inline-flex items-center">
                   <input
@@ -291,9 +310,9 @@ const AddEvent = () => {
                     value="online"
                     checked={formData.event_type === "online"}
                     onChange={handleChange}
-                    className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                    className="form-radio h-4 w-4 text-indigo-600"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Online</span>
+                  <span className="ml-2 text-sm">Online</span>
                 </label>
               </div>
             </div>
@@ -309,9 +328,9 @@ const AddEvent = () => {
                     value="ticketed"
                     checked={formData.ticket_status === "ticketed"}
                     onChange={handleChange}
-                    className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                    className="form-radio h-4 w-4 text-indigo-600"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Ticketed</span>
+                  <span className="ml-2 text-sm">Ticketed</span>
                 </label>
                 <label className="inline-flex items-center">
                   <input
@@ -320,38 +339,27 @@ const AddEvent = () => {
                     value="non-ticketed"
                     checked={formData.ticket_status === "non-ticketed"}
                     onChange={handleChange}
-                    className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                    className="form-radio h-4 w-4 text-indigo-600"
                   />
-                  <span className="ml-2 text-sm text-gray-700">
-                    Non-Ticketed
-                  </span>
+                  <span className="ml-2 text-sm">Non-Ticketed</span>
                 </label>
               </div>
             </div>
           </div>
 
-          <label className="block text-sm font-medium text-gray-700">
-            Event Description
-          </label>
-          <Editor
-            apiKey="ea27sqk1uwrlxc5aftiz9b604xwtz8l8n4hqa4ashqoq2k6i"
-            onEditorChange={handleEditorChange}
-            init={{
-              height: 500,
-              menubar: true,
-              plugins:
-                "advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount",
-              toolbar:
-                "undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help",
-            }}
-          />
-
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end space-x-3 pt-4 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 rounded-lg bg-gray-100"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
-              className="inline-flex justify-center py-3 px-8 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+              className="px-6 py-2 rounded-lg text-white bg-blue-600"
             >
-              Create Event
+              Save Changes
             </button>
           </div>
         </form>
@@ -360,4 +368,4 @@ const AddEvent = () => {
   );
 };
 
-export default AddEvent;
+export default EventFormModal;

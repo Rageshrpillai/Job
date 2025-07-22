@@ -51,6 +51,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $supportRole->syncPermissions([
             'view-users', 'view-user-details', 'view-login-history',
         ]);
+
+        $subUserRole = Role::firstOrCreate(['name' => 'Sub-User', 'guard_name' => 'sanctum']);
         
         // Assign Super Admin role to the first admin user
         $adminUser = User::where('is_admin', true)->first();
