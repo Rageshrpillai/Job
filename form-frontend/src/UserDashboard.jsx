@@ -1,23 +1,18 @@
-// File: src/UserDashboard.jsx
-// This is the complete, corrected code for this file.
-// It REPLACES the previous version entirely.
-
-// What's new:
-// 1. Correct NavLink 'to' paths: Changed from "/user-dashboard" to "/dashboard" to match your App.jsx routes.
-// 2. Added a Logout button at the bottom of the sidebar. It calls the 'onLogout' function passed from App.jsx.
-// 3. Passed the 'user' prop to display the user's name.
-
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { PowerIcon, UserCircleIcon } from "@heroicons/react/24/outline"; // Using icons for a better UI
+import { PowerIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 
 const UserDashboard = ({ user, onLogout }) => {
-  // These styles help indicate the active page
+  // Style definitions for the navigation links
   const linkClasses =
     "flex items-center gap-3 px-4 py-2.5 rounded-lg transition duration-200";
   const activeLinkClasses = "bg-indigo-700 text-white font-semibold";
   const inactiveLinkClasses =
     "text-indigo-100 hover:bg-indigo-500 hover:text-white";
+
+  // A helper function to combine the classes
+  const getLinkClassName = ({ isActive }) =>
+    `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`;
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
@@ -29,36 +24,18 @@ const UserDashboard = ({ user, onLogout }) => {
 
         {/* Navigation Links */}
         <nav className="flex-grow p-2 space-y-1">
-          <NavLink
-            to="/dashboard"
-            end // 'end' ensures this link is only active on the exact path
-            className={({ isActive }) =>
-              `${linkClasses} ${
-                isActive ? activeLinkClasses : inactiveLinkClasses
-              }`
-            }
-          >
+          <NavLink to="/dashboard" end className={getLinkClassName}>
             Analysis
           </NavLink>
-          <NavLink
-            to="/dashboard/events"
-            className={({ isActive }) =>
-              `${linkClasses} ${
-                isActive ? activeLinkClasses : inactiveLinkClasses
-              }`
-            }
-          >
+          <NavLink to="/dashboard/events" className={getLinkClassName}>
             Events
           </NavLink>
-          <NavLink
-            to="/dashboard/sub-users"
-            className={({ isActive }) =>
-              `${linkClasses} ${
-                isActive ? activeLinkClasses : inactiveLinkClasses
-              }`
-            }
-          >
-            Sub-Users
+          <NavLink to="/dashboard/sub-users" className={getLinkClassName}>
+            User Management
+          </NavLink>
+          {/* --- THIS IS THE CORRECTED LINK --- */}
+          <NavLink to="/dashboard/team-roles" className={getLinkClassName}>
+            Team Roles
           </NavLink>
         </nav>
 
@@ -83,7 +60,6 @@ const UserDashboard = ({ user, onLogout }) => {
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto">
-        {/* The Outlet component renders the matched child route component */}
         <Outlet />
       </main>
     </div>

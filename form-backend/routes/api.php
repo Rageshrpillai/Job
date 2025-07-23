@@ -9,7 +9,7 @@ use App\Http\Controllers\Auth\AdminAuthController;
 use App\Http\Controllers\SubUserController;
 use App\Http\Controllers\EventController; // ** ADD THIS IMPORT **
 use App\Http\Controllers\TicketController; // ** ADD THIS IMPORT **
-
+use App\Http\Controllers\UserRoleController; // ** ADD THIS IMPORT **
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -47,6 +47,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/events/{event}/tickets', [TicketController::class, 'store']);
     Route::put('/events/{event}', [EventController::class, 'update']);
 
+    // User Role Management for regular users
+    Route::get('/user/roles/permissions', [UserRoleController::class, 'getPermissions']);
+    Route::apiResource('/user/roles', UserRoleController::class);
 
     // ===============================================================
     // ADMIN-ONLY ROUTES
@@ -75,6 +78,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/users/{id}/restore', [AdminController::class, 'restoreUser']);
         Route::delete('/users/{id}/force-delete', [AdminController::class, 'forceDeleteUser']);
 
+
+
+        Route::prefix('user')->group(function () {
+        Route::get('/roles/permissions', [UserRoleController::class, 'getPermissions']);
+         Route::apiResource('/roles', UserRoleController::class);
+});
+
         // --- Role & Permission Management ---
         Route::get('/roles', [RoleController::class, 'index']);
         Route::post('/roles', [RoleController::class, 'store']);
@@ -83,4 +93,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/permissions', [RoleController::class, 'getAllPermissions']);
         Route::post('/users/{user}/assign-roles', [RoleController::class, 'assignRolesToUser']);
     });
+
+
+
+
+    Route::get('/debug-permissions', function () {
+        return \Spatie\Permission\Models\Permission::all()->pluck('name');
+    });
+    // ------------------------------------
+
 });
