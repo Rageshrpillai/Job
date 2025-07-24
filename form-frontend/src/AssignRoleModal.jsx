@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from "react";
 import api from "./api";
 
-function AssignRoleModal({ user, onClose, onSave }) {
+function AssignRoleModal({ user, onClose, onSave, assignRoleEndpoint, rolesEndpoint }) {
   const [roles, setRoles] = useState([]);
   const [selectedRoles, setSelectedRoles] = useState(
-    new Set(user ? user.roles.map((r) => r.id) : [])
+    new Set(user ? (user.roles ? user.roles.map((r) => r.id) : []) : [])
   );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Fetch all available roles from the backend to display as checkboxes
     api
-      .get("/api/admin/roles")
+      .get(rolesEndpoint || "/api/admin/roles")
       .then((response) => {
         setRoles(response.data);
       })
       .catch((err) => console.error("Failed to fetch roles", err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [rolesEndpoint]);
 
   const handleRoleChange = (roleId, isChecked) => {
     const newSelection = new Set(selectedRoles);
@@ -35,8 +35,8 @@ function AssignRoleModal({ user, onClose, onSave }) {
     };
 
     api
-      .post(`/api/admin/users/${user.id}/assign-roles`, payload)
-      .then(() => onSave()) // Call the onSave prop to close modal and refresh list
+      .post(assignRoleEndpoint || `/api/admin/users/${user.id}/assign-roles`, payload)
+      .then(() => onSave && onSave()) // Call the onSave prop to close modal and refresh list
       .catch((err) =>
         alert(
           `Error: ${err.response?.data?.message || "Could not assign roles."}`

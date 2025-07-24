@@ -41,18 +41,18 @@ class RolesAndPermissionsSeeder extends Seeder
         // --- 2. CREATE ROLES AND ASSIGN PERMISSIONS ---
 
         // Administrator Role
-        $adminRole = Role::firstOrCreate(['name' => 'Administrator', 'guard_name' => 'sanctum']);
+        $adminRole = Role::updateOrCreate(['name' => 'Administrator', 'guard_name' => 'sanctum'], ['type' => 'admin']);
         $adminRole->syncPermissions($adminPermissions);
         
         // Support Specialist Role
-        $supportRole = Role::firstOrCreate(['name' => 'Support Specialist', 'guard_name' => 'sanctum']);
+        $supportRole = Role::updateOrCreate(['name' => 'Support Specialist', 'guard_name' => 'sanctum'], ['type' => 'admin']);
         $supportRole->syncPermissions(['view-users', 'view-user-details', 'view-login-history']);
 
         // Sub-User Role (for user's team members, has no permissions by default)
-        Role::firstOrCreate(['name' => 'Sub-User', 'guard_name' => 'sanctum']);
+        Role::updateOrCreate(['name' => 'Sub-User', 'guard_name' => 'sanctum'], ['type' => 'user']);
 
         // Super Admin Role (gets all permissions)
-        $superAdminRole = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'sanctum']);
+        $superAdminRole = Role::updateOrCreate(['name' => 'Super Admin', 'guard_name' => 'sanctum'], ['type' => 'admin']);
         $superAdminRole->givePermissionTo(Permission::all());
 
         // --- 3. CREATE ADMIN USER ---
@@ -63,6 +63,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'password' => bcrypt('password'),
                 'organization_type' => 'business',
                 'status' => 'active',
+                'is_admin'
             ]
         );
         $adminUser->assignRole('Super Admin');

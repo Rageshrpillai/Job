@@ -10,16 +10,16 @@ const UserRoleFormModal = ({ isOpen, onClose, onSubmitSuccess, roleData }) => {
 
   useEffect(() => {
     if (isOpen) {
-      // --- FIX: Removed '/api' prefix ---
       api
-        .get("/user/roles/permissions")
+        .get("/api/user/roles/permissions")
         .then((response) => {
+          console.log("[DEBUG] Permissions API response:", response.data);
           setAvailablePermissions(
             Array.isArray(response.data) ? response.data : []
           );
         })
         .catch((error) => {
-          console.error("Error fetching permissions:", error);
+          console.error("[DEBUG] Error fetching permissions:", error);
           setAvailablePermissions([]);
         });
     }
@@ -50,8 +50,8 @@ const UserRoleFormModal = ({ isOpen, onClose, onSubmitSuccess, roleData }) => {
 
     // --- FIX: Removed '/api' prefix ---
     const apiCall = isEditMode
-      ? api.put(`/user/roles/${roleData.id}`, payload)
-      : api.post("/user/roles", payload);
+      ? api.put(`/api/user/roles/${roleData.id}`, payload)
+      : api.post("/api/user/roles", payload);
 
     try {
       await apiCall;

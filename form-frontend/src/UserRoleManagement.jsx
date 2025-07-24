@@ -12,7 +12,7 @@ const UserRoleManagement = () => {
     setLoading(true);
     // --- FIX: Removed '/api' prefix ---
     api
-      .get("/user/roles")
+      .get("/api/user/roles")
       .then((response) => {
         setRoles(Array.isArray(response.data) ? response.data : []);
       })
@@ -31,7 +31,7 @@ const UserRoleManagement = () => {
     if (window.confirm("Are you sure you want to delete this role?")) {
       // --- FIX: Removed '/api' prefix ---
       api
-        .delete(`/user/roles/${roleId}`)
+        .delete(`/api/user/roles/${roleId}`)
         .then(() => {
           alert("Role deleted successfully.");
           fetchUserRoles();

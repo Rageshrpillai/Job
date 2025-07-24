@@ -243,11 +243,12 @@ const SubUserManagement = () => {
           onClose={closeModals}
           user={selectedUser}
           roles={roles}
-          onRoleAssigned={() => {
+          onSave={() => {
             fetchData();
             closeModals();
           }}
           assignRoleEndpoint={`/api/sub-users/${selectedUser.id}/assign-role`}
+          rolesEndpoint="/api/roles"
         />
       )}
 

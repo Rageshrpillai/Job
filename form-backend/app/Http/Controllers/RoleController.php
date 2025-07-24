@@ -16,7 +16,12 @@ class RoleController extends Controller
 
     public function index()
     {
-        $roles = Role::with('permissions')->get();
+        $user = auth()->user();
+        if ($user && $user->is_admin) {
+            $roles = Role::where('type', 'admin')->get();
+        } else {
+            $roles = Role::where('type', 'user')->get();
+        }
         return response()->json($roles);
     }
 
