@@ -52,6 +52,7 @@ class EventController extends Controller
 
         $event = Event::create([
             'user_id' => $organizer->id,
+            'status' => $request->input('status', 'draft'),
             'title' => $validated['title'],
             'slug' => Str::slug($validated['title']),
             'description' => $validated['description'],

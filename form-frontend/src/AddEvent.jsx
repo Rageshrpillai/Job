@@ -1,6 +1,8 @@
 import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "./api";
 import { Editor } from "@tinymce/tinymce-react";
+import EventTypeModal from "./EventTypeModal";
 
 const AddEvent = () => {
   const [formData, setFormData] = useState({
@@ -12,7 +14,6 @@ const AddEvent = () => {
     state: "",
     zip_code: "",
     event_type: "in-person",
-    ticket_status: "non-ticketed",
     category: "",
     max_attendees: "",
   });
@@ -21,6 +22,9 @@ const AddEvent = () => {
   const [mainImage, setMainImage] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
   const fileInputRef = useRef(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate();
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -30,7 +34,6 @@ const AddEvent = () => {
     const file = e.target.files[0];
     if (file) {
       setMainImage(file);
-      // Create a temporary URL for the selected file to use in the <img> tag
       setPhotoPreview(URL.createObjectURL(file));
     }
   };
@@ -39,11 +42,17 @@ const AddEvent = () => {
     setDescription(content);
   };
 
-  const handleSubmit = async (e) => {
+  // Step 1: The form's submit button calls this function
+  const handleInitialSubmit = (e) => {
     e.preventDefault();
-    const data = new FormData();
+    setIsModalOpen(true);
+  };
 
-    // Mapping frontend state to backend fields
+  // Step 2: The modal calls this function after a choice is made
+  const handleFinalSubmit = async (ticketStatus) => {
+    setIsModalOpen(false);
+
+    const data = new FormData();
     data.append("title", formData.event_name);
     data.append("description", description);
     data.append(
@@ -61,213 +70,208 @@ const AddEvent = () => {
     data.append("event_type", formData.event_type);
     data.append("category", formData.category);
     data.append("max_attendees", formData.max_attendees);
-
     if (mainImage) {
       data.append("main_image", mainImage);
     }
 
-    try {
-      await api.post("/api/events", data, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      alert("Event created successfully!");
-    } catch (error) {
-      console.error("Error creating event:", error.response?.data);
-      alert("Failed to create event. Please check the form.");
+    if (ticketStatus === "ticketed") {
+      data.append("status", "draft");
+      try {
+        const response = await api.post("/api/events", data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        navigate(`/dashboard/events/create/${response.data.id}`);
+      } catch (error) {
+        console.error("Error creating draft event:", error.response?.data);
+        alert("Failed to create draft event.");
+      }
+    } else {
+      data.append("status", "published");
+      try {
+        await api.post("/api/events", data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        alert("Event created successfully!");
+        navigate("/dashboard/events");
+      } catch (error) {
+        console.error("Error creating event:", error.response?.data);
+        alert("Failed to create event.");
+      }
     }
   };
 
   return (
-    <div className="bg-white p-6 sm:p-10 rounded-b-2xl rounded-tr-2xl shadow-lg">
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-gray-900 mb-8">
-          Create a New Event
-        </h2>
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label
-              htmlFor="event_name"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Event Name
-            </label>
-            <input
-              type="text"
-              name="event_name"
-              id="event_name"
-              required
-              value={formData.event_name}
-              onChange={handleChange}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
+    <>
+      <div className="bg-white p-6 sm:p-10 rounded-b-2xl rounded-tr-2xl shadow-lg">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8">
+            Create a New Event
+          </h2>
+          <form className="space-y-6" onSubmit={handleInitialSubmit}>
+            <div>
+              <label
+                htmlFor="event_name"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Event Name
+              </label>
+              <input
+                type="text"
+                name="event_name"
+                id="event_name"
+                required
+                value={formData.event_name}
+                onChange={handleChange}
+                className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Event Photo
-            </label>
-            <div className="mt-1 flex items-center space-x-4">
-              {/* This part conditionally renders the preview or a placeholder */}
-              {photoPreview ? (
-                <img
-                  src={photoPreview}
-                  alt="Event Preview"
-                  className="h-24 w-24 object-cover rounded-lg"
-                />
-              ) : (
-                <div className="h-24 w-24 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-10 w-10"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Event Photo
+              </label>
+              <div className="mt-1 flex items-center space-x-4">
+                {photoPreview ? (
+                  <img
+                    src={photoPreview}
+                    alt="Event Preview"
+                    className="h-24 w-24 object-cover rounded-lg"
+                  />
+                ) : (
+                  <div className="h-24 w-24 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+                    Preview
+                  </div>
+                )}
+                <div>
+                  <input
+                    type="file"
+                    name="main_image"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    ref={fileInputRef}
+                    className="hidden"
+                    id="main_image_upload"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current.click()}
+                    className="px-4 py-2 rounded-md border border-gray-300 text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
+                    Upload Photo
+                  </button>
                 </div>
-              )}
-              <div>
-                {/* The actual file input is now hidden from the user */}
-                <input
-                  type="file"
-                  name="main_image"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  ref={fileInputRef}
-                  className="hidden"
-                  id="main_image_upload"
-                />
-                {/* This styled button triggers the hidden file input */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current.click()}
-                  className="px-4 py-2 rounded-md border border-gray-300 text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Upload Photo
-                </button>
-                <p className="text-xs text-gray-500 mt-2">
-                  PNG, JPG, GIF up to 500KB.
-                </p>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label
-                htmlFor="event_date"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Date
-              </label>
-              <input
-                type="date"
-                name="event_date"
-                id="event_date"
-                required
-                value={formData.event_date}
-                onChange={handleChange}
-                className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label
+                  htmlFor="event_date"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Date
+                </label>
+                <input
+                  type="date"
+                  name="event_date"
+                  id="event_date"
+                  required
+                  value={formData.event_date}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="event_start_time"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Start Time
+                </label>
+                <input
+                  type="time"
+                  name="event_start_time"
+                  id="event_start_time"
+                  required
+                  value={formData.event_start_time}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="event_end_time"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  End Time
+                </label>
+                <input
+                  type="time"
+                  name="event_end_time"
+                  id="event_end_time"
+                  required
+                  value={formData.event_end_time}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
             </div>
-            <div>
-              <label
-                htmlFor="event_start_time"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Start Time
-              </label>
-              <input
-                type="time"
-                name="event_start_time"
-                id="event_start_time"
-                required
-                value={formData.event_start_time}
-                onChange={handleChange}
-                className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="event_end_time"
-                className="block text-sm font-medium text-gray-700"
-              >
-                End Time
-              </label>
-              <input
-                type="time"
-                name="event_end_time"
-                id="event_end_time"
-                required
-                value={formData.event_end_time}
-                onChange={handleChange}
-                className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
-              />
-            </div>
-          </div>
 
-          <div>
-            <label
-              htmlFor="location"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Location / Address
-            </label>
-            <input
-              type="text"
-              name="location"
-              id="location"
-              required
-              value={formData.location}
-              onChange={handleChange}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label
-                htmlFor="state"
+                htmlFor="location"
                 className="block text-sm font-medium text-gray-700"
               >
-                State
+                Location / Address
               </label>
               <input
                 type="text"
-                name="state"
-                id="state"
+                name="location"
+                id="location"
                 required
-                value={formData.state}
+                value={formData.location}
                 onChange={handleChange}
                 className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
               />
             </div>
-            <div>
-              <label
-                htmlFor="zip_code"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Zip Code
-              </label>
-              <input
-                type="text"
-                name="zip_code"
-                id="zip_code"
-                required
-                value={formData.zip_code}
-                onChange={handleChange}
-                className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label
+                  htmlFor="state"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  State
+                </label>
+                <input
+                  type="text"
+                  name="state"
+                  id="state"
+                  required
+                  value={formData.state}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="zip_code"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Zip Code
+                </label>
+                <input
+                  type="text"
+                  name="zip_code"
+                  id="zip_code"
+                  required
+                  value={formData.zip_code}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Event Type
@@ -280,7 +284,7 @@ const AddEvent = () => {
                     value="in-person"
                     checked={formData.event_type === "in-person"}
                     onChange={handleChange}
-                    className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                    className="form-radio h-4 w-4 text-indigo-600 border-gray-300"
                   />
                   <span className="ml-2 text-sm text-gray-700">In-Person</span>
                 </label>
@@ -291,72 +295,47 @@ const AddEvent = () => {
                     value="online"
                     checked={formData.event_type === "online"}
                     onChange={handleChange}
-                    className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                    className="form-radio h-4 w-4 text-indigo-600 border-gray-300"
                   />
                   <span className="ml-2 text-sm text-gray-700">Online</span>
                 </label>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Ticket Status
-              </label>
-              <div className="mt-2 flex items-center space-x-6">
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name="ticket_status"
-                    value="ticketed"
-                    checked={formData.ticket_status === "ticketed"}
-                    onChange={handleChange}
-                    className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Ticketed</span>
-                </label>
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name="ticket_status"
-                    value="non-ticketed"
-                    checked={formData.ticket_status === "non-ticketed"}
-                    onChange={handleChange}
-                    className="form-radio h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">
-                    Non-Ticketed
-                  </span>
-                </label>
-              </div>
+
+            <label className="block text-sm font-medium text-gray-700">
+              Event Description
+            </label>
+            <Editor
+              apiKey="ea27sqk1uwrlxc5aftiz9b604xwtz8l8n4hqa4ashqoq2k6i"
+              onEditorChange={handleEditorChange}
+              init={{
+                height: 500,
+                menubar: true,
+                plugins:
+                  "advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount",
+                toolbar:
+                  "undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help",
+              }}
+            />
+
+            <div className="flex justify-end pt-4">
+              <button
+                type="submit"
+                className="inline-flex justify-center py-3 px-8 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+              >
+                Continue
+              </button>
             </div>
-          </div>
-
-          <label className="block text-sm font-medium text-gray-700">
-            Event Description
-          </label>
-          <Editor
-            apiKey="ea27sqk1uwrlxc5aftiz9b604xwtz8l8n4hqa4ashqoq2k6i"
-            onEditorChange={handleEditorChange}
-            init={{
-              height: 500,
-              menubar: true,
-              plugins:
-                "advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount",
-              toolbar:
-                "undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help",
-            }}
-          />
-
-          <div className="flex justify-end pt-4">
-            <button
-              type="submit"
-              className="inline-flex justify-center py-3 px-8 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              Create Event
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
+
+      <EventTypeModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSelect={handleFinalSubmit}
+      />
+    </>
   );
 };
 

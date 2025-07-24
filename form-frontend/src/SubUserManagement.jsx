@@ -6,6 +6,7 @@ import ReasonInputModal from "./ReasonInputModal"; // <-- Now correctly importin
 const SubUserManagement = () => {
   const [subUsers, setSubUsers] = useState([]);
   const [roles, setRoles] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -20,7 +21,8 @@ const SubUserManagement = () => {
     try {
       const [subUsersResponse, rolesResponse] = await Promise.all([
         api.get("/api/sub-users"),
-        api.get("/api/roles"),
+
+        api.get("/api/assignable-roles"), //
       ]);
       setSubUsers(subUsersResponse.data);
       setRoles(rolesResponse.data);

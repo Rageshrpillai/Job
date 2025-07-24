@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Role;
+use App\Models\UserRole; 
 class SubUserController extends Controller
 {
     /**
@@ -75,6 +76,27 @@ class SubUserController extends Controller
         $user->syncRoles($validated['role']);
 
         return response()->json(['message' => 'Role assigned successfully.']);
+    }
+
+
+     
+    public function getAssignableRoles()
+    {
+        // Fetch the default, site-wide "Sub-User" role
+        $defaultRole = Role::where('name', 'Sub-User')->first();
+
+        // Fetch all custom roles created by the currently authenticated user
+        $customRoles = UserRole::where('parent_user_id', Auth::id())->get();
+
+        // Start with the custom roles
+        $assignableRoles = collect($customRoles);
+
+        // If the default role exists, add it to the beginning of the list
+        if ($defaultRole) {
+            $assignableRoles->prepend($defaultRole);
+        }
+
+        return response()->json($assignableRoles);
     }
     public function performAction(Request $request, User $user)
     {

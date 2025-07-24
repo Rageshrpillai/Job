@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 import api from "./api";
+import AddEvent from "./AddEvent";
+import EventFormModal from "./EventFormModal";
+import PreviewEventModal from "./PreviewEventModal";
 
-// Import your page and modal components
-import AddEvent from "./AddEvent"; // The full-page form
-import EventFormModal from "./EventFormModal"; // The modal for editing
-import PreviewEventModal from "./PreviewEventModal"; // The modal for previewing
-
-// This is the component for the "Manage Events" tab content
+// This component shows the list of existing events. Its logic is correct.
 const ManageEvents = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +20,10 @@ const ManageEvents = () => {
       .then((response) => {
         setEvents(Array.isArray(response.data) ? response.data : []);
       })
-      .catch((error) => console.error("Error fetching events:", error))
+      .catch((error) => {
+        console.error("Error fetching events:", error);
+        setEvents([]);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -36,7 +37,7 @@ const ManageEvents = () => {
         .delete(`/api/events/${eventId}`)
         .then(() => {
           alert("Event deleted successfully!");
-          setEvents(events.filter((event) => event.id !== eventId));
+          fetchEvents();
         })
         .catch((error) => alert("Failed to delete event."));
     }
@@ -54,7 +55,7 @@ const ManageEvents = () => {
 
   const onFormSubmit = () => {
     setIsFormModalOpen(false);
-    fetchEvents(); // Refresh the list after editing
+    fetchEvents();
   };
 
   if (loading)
@@ -70,16 +71,16 @@ const ManageEvents = () => {
           <table className="min-w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
                   Title
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
                   Start Time
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
                   Actions
                 </th>
               </tr>
@@ -88,21 +89,15 @@ const ManageEvents = () => {
               {events.length > 0 ? (
                 events.map((event) => (
                   <tr key={event.id} className="hover:bg-gray-50">
-                    {/* --- FIX 1: Use 'title' from your backend --- */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {event.title}
                     </td>
-
-                    {/* --- FIX 2: Use 'start_time' directly --- */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {new Date(event.start_time).toLocaleString()}
                     </td>
-
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800`}
-                      >
-                        Draft
+                      <span className="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 capitalize">
+                        {event.status || "Draft"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-4">
@@ -138,14 +133,12 @@ const ManageEvents = () => {
           </table>
         </div>
       </div>
-
       <EventFormModal
         isOpen={isFormModalOpen}
         onClose={() => setIsFormModalOpen(false)}
         onSubmitSuccess={onFormSubmit}
         eventData={editingEvent}
       />
-
       <PreviewEventModal
         isOpen={isPreviewModalOpen}
         onClose={() => setIsPreviewModalOpen(false)}
@@ -155,7 +148,7 @@ const ManageEvents = () => {
   );
 };
 
-// Main page container with the restored tab layout
+// Main page container with the corrected, simple tab logic.
 const EventManagementPage = () => {
   const [activeTab, setActiveTab] = useState("manage");
 
@@ -187,7 +180,6 @@ const EventManagementPage = () => {
             Add New Event
           </button>
         </div>
-
         <div className="mt-[-1px]">
           {activeTab === "manage" ? <ManageEvents /> : <AddEvent />}
         </div>
