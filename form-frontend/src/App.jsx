@@ -21,6 +21,8 @@ import AnalysisPage from "./AnalysisPage";
 import EventManagementPage from "./EventManagementPage";
 import SubUserManagementPage from "./SubUserManagementPage";
 import UserRoleManagement from "./UserRoleManagement";
+import CreateEventWizard from "./CreateEventWizard"; // Import the wizard
+
 // This is a helper component to protect routes based on login status and role
 const ProtectedRoute = ({ isAllowed, redirectPath = "/login", children }) => {
   if (!isAllowed) {
@@ -121,6 +123,11 @@ function App() {
 
               {/* Other user dashboard pages */}
               <Route path="events" element={<EventManagementPage />} />
+              {/* THIS IS THE NEWLY ADDED ROUTE */}
+              <Route
+                path="events/create-wizard/:eventId"
+                element={<CreateEventWizard />}
+              />
               <Route path="sub-users" element={<SubUserManagementPage />} />
               <Route path="team-roles" element={<UserRoleManagement />} />
             </Route>

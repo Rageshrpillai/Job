@@ -42,16 +42,12 @@ const AddEvent = () => {
     setDescription(content);
   };
 
-  // Step 1: The form's submit button calls this function
-  const handleInitialSubmit = (e) => {
+  const handleFormSubmit = (e) => {
     e.preventDefault();
     setIsModalOpen(true);
   };
 
-  // Step 2: The modal calls this function after a choice is made
-  const handleFinalSubmit = async (ticketStatus) => {
-    setIsModalOpen(false);
-
+  const buildFormData = () => {
     const data = new FormData();
     data.append("title", formData.event_name);
     data.append("description", description);
@@ -73,30 +69,40 @@ const AddEvent = () => {
     if (mainImage) {
       data.append("main_image", mainImage);
     }
+    return data;
+  };
 
-    if (ticketStatus === "ticketed") {
-      data.append("status", "draft");
-      try {
-        const response = await api.post("/api/events", data, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        navigate(`/dashboard/events/create/${response.data.id}`);
-      } catch (error) {
-        console.error("Error creating draft event:", error.response?.data);
-        alert("Failed to create draft event.");
-      }
-    } else {
-      data.append("status", "published");
-      try {
-        await api.post("/api/events", data, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        alert("Event created successfully!");
-        navigate("/dashboard/events");
-      } catch (error) {
-        console.error("Error creating event:", error.response?.data);
-        alert("Failed to create event.");
-      }
+  const handleConfirmTicketed = async () => {
+    setIsModalOpen(false);
+    const data = buildFormData();
+    data.append("status", "draft");
+
+    try {
+      const response = await api.post("/api/events", data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      // Navigate to the new wizard route
+      navigate(`/dashboard/events/create-wizard/${response.data.id}`);
+    } catch (error) {
+      console.error("Error creating draft event:", error.response?.data);
+      alert("Failed to create draft event.");
+    }
+  };
+
+  const handleNonTicketed = async () => {
+    setIsModalOpen(false);
+    const data = buildFormData();
+    data.append("status", "published");
+
+    try {
+      await api.post("/api/events", data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      alert("Event created successfully!");
+      navigate("/dashboard/events");
+    } catch (error) {
+      console.error("Error creating event:", error.response?.data);
+      alert("Failed to create event.");
     }
   };
 
@@ -107,7 +113,7 @@ const AddEvent = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-8">
             Create a New Event
           </h2>
-          <form className="space-y-6" onSubmit={handleInitialSubmit}>
+          <form className="space-y-6" onSubmit={handleFormSubmit}>
             <div>
               <label
                 htmlFor="event_name"
@@ -332,8 +338,8 @@ const AddEvent = () => {
 
       <EventTypeModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSelect={handleFinalSubmit}
+        onClose={handleNonTicketed}
+        onConfirm={handleConfirmTicketed}
       />
     </>
   );
