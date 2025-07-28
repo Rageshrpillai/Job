@@ -25,8 +25,12 @@ const TicketManagementPage = () => {
           api.get(`/api/events/${eventId}`),
           api.get(`/api/events/${eventId}/tickets`),
         ]);
-        setEventName(eventRes.data.title);
-        setTickets(ticketsRes.data);
+
+        // ### START OF THE FIX ###
+        // Access the nested 'data' object returned by the API Resource
+        setEventName(eventRes.data.data.title);
+        setTickets(ticketsRes.data.data);
+        // ### END OF THE FIX ###
       } catch (error) {
         console.error("Failed to fetch event tickets", error);
         alert("Failed to load ticket data. Please ensure the event exists.");
@@ -57,7 +61,7 @@ const TicketManagementPage = () => {
         `/api/events/${eventId}/tickets`,
         submissionData
       );
-      setTickets((prev) => [...prev, response.data]);
+      setTickets((prev) => [...prev, response.data.data]);
       setNewTicket({
         name: "",
         price: "",
@@ -83,6 +87,7 @@ const TicketManagementPage = () => {
         await api.delete(`/api/tickets/${ticketId}`);
         setTickets(tickets.filter((ticket) => ticket.id !== ticketId));
       } catch (error) {
+        console.log("eventId:", eventId); // Log which ID caused the failure
         console.error("Failed to delete ticket:", error.response?.data);
         alert("Failed to delete ticket.");
       }

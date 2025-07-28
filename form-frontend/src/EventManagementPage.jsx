@@ -17,7 +17,7 @@ const ManageEvents = ({ filter }) => {
   const fetchEvents = () => {
     setLoading(true);
     api
-      .get("/api/events", { params: { filter } })
+      .get("/api/events", { params: { filter } }) // ✅ pass filter as query param
       .then((response) => {
         setEvents(Array.isArray(response.data) ? response.data : []);
       })
@@ -30,7 +30,7 @@ const ManageEvents = ({ filter }) => {
 
   useEffect(() => {
     fetchEvents();
-  }, [filter]);
+  }, [filter]); // This can stay, it won't cause issues
 
   const handleDelete = (eventId) => {
     if (window.confirm("Are you sure you want to delete this event?")) {
@@ -98,8 +98,14 @@ const ManageEvents = ({ filter }) => {
                       {new Date(event.start_time).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 capitalize">
-                        {event.status || "Draft"}
+                      <span
+                        className={`px-3 py-1 inline-flex text-xs font-semibold rounded-full capitalize ${
+                          event.status === "draft"
+                            ? "bg-gray-200 text-gray-800"
+                            : "bg-green-100 text-green-800"
+                        }`}
+                      >
+                        {event.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
@@ -115,7 +121,6 @@ const ManageEvents = ({ filter }) => {
                       >
                         Edit
                       </button>
-                      {/* This is the new button for tickets */}
                       <button
                         onClick={() =>
                           handleNavigate(
@@ -148,7 +153,7 @@ const ManageEvents = ({ filter }) => {
               ) : (
                 <tr>
                   <td colSpan="4" className="text-center py-10 text-gray-500">
-                    No events match the selected filter.
+                    You have not created any events yet.
                   </td>
                 </tr>
               )}
@@ -173,7 +178,8 @@ const ManageEvents = ({ filter }) => {
 
 const EventManagementPage = () => {
   const [activeTab, setActiveTab] = useState("manage");
-  const [filter, setFilter] = useState("upcoming");
+  // Filter state is kept for future use but doesn't affect the API call for now.
+  const [filter, setFilter] = useState("all");
 
   const baseTabStyles =
     "py-3 px-6 font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500";
@@ -214,12 +220,20 @@ const EventManagementPage = () => {
           <div className="pt-6 pb-4 bg-white px-6 rounded-tr-2xl">
             <div className="flex space-x-3">
               <button
+                onClick={() => setFilter("all")}
+                className={`px-4 py-2 text-sm font-semibold rounded-full shadow-sm border border-gray-300 ${getFilterButtonClass(
+                  "all"
+                )}`}
+              >
+                All Events
+              </button>
+              <button
                 onClick={() => setFilter("upcoming")}
                 className={`px-4 py-2 text-sm font-semibold rounded-full shadow-sm border border-gray-300 ${getFilterButtonClass(
                   "upcoming"
                 )}`}
               >
-                Upcoming Events
+                Upcoming
               </button>
               <button
                 onClick={() => setFilter("current")}
@@ -227,7 +241,7 @@ const EventManagementPage = () => {
                   "current"
                 )}`}
               >
-                Current Events
+                Current
               </button>
               <button
                 onClick={() => setFilter("past")}
@@ -235,7 +249,15 @@ const EventManagementPage = () => {
                   "past"
                 )}`}
               >
-                Past Events
+                Past
+              </button>
+              <button
+                onClick={() => setFilter("drafted")}
+                className={`px-4 py-2 text-sm font-semibold rounded-full shadow-sm border border-gray-300 ${getFilterButtonClass(
+                  "drafted"
+                )}`}
+              >
+                Drafts
               </button>
             </div>
           </div>

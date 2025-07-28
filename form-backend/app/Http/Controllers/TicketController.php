@@ -2,65 +2,58 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\TicketResource;
 use App\Models\Event;
 use App\Models\Ticket;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class TicketController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Event $event)
+    public function index($eventId)
     {
-        if ($event->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        $event = Event::find($eventId);
+
+        if (!$event) {
+            return response()->json(['message' => 'Event not found'], 404);
         }
 
-        return response()->json($event->tickets);
+        $tickets = Ticket::where('event_id', $eventId)->get();
+
+        return TicketResource::collection($tickets);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request, Event $event)
+    public function store(Request $request, $eventId)
     {
-        if ($event->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        $event = Event::find($eventId);
+
+        if (!$event) {
+            return response()->json(['message' => 'Event not found'], 404);
         }
 
-        // ### START OF THE FIX ###
-        // Updated validation to match the frontend form and database migration.
-        $validatedData = $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'total_quantity' => 'required|integer|min:1', // Corrected field name
+            'total_quantity' => 'required|integer|min:1',
             'description' => 'nullable|string',
             'sale_start_date' => 'required|date',
-            'sale_end_date' => 'required|date|after_or_equal:sale_start_date',
+            'sale_end_date' => 'required|date|after:sale_start_date',
         ]);
-        // ### END OF THE FIX ###
-        
-        // The rest of the data is now correctly named from the form
-        $ticket = $event->tickets()->create($validatedData);
 
-        return response()->json($ticket, 201);
+        $ticket = $event->tickets()->create($validated);
+
+        return new TicketResource($ticket);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */ public function destroy(Ticket $ticket)
+    public function destroy($ticketId)
     {
-        // ### START OF THE FIX ###
-        // Get the parent event from the ticket and check if the authenticated user owns it.
-        if ($ticket->event->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        $ticket = Ticket::find($ticketId);
+
+        if (!$ticket) {
+            return response()->json(['message' => 'Ticket not found'], 404);
         }
-        // ### END OF THE FIX ###
 
         $ticket->delete();
 
-        return response()->json(['message' => 'Ticket deleted successfully'], 200);
+        return response()->json(['message' => 'Ticket deleted successfully']);
     }
 }

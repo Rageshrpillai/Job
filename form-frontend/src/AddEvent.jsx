@@ -4,7 +4,7 @@ import api from "./api";
 import { Editor } from "@tinymce/tinymce-react";
 import EventTypeModal from "./EventTypeModal";
 
-const AddEvent = () => {
+const AddEvent = ({ onEventCreated }) => {
   const [formData, setFormData] = useState({
     event_name: "",
     event_date: "",
@@ -57,11 +57,11 @@ const AddEvent = () => {
     );
     data.append(
       "start_time",
-      `${formData.event_date} ${formData.event_start_time}`
+      `${formData.event_date}T${formData.event_start_time}`
     );
     data.append(
       "end_time",
-      `${formData.event_date} ${formData.event_end_time}`
+      `${formData.event_date}T${formData.event_end_time}`
     );
     data.append("event_type", formData.event_type);
     data.append("category", formData.category);
@@ -81,8 +81,11 @@ const AddEvent = () => {
       const response = await api.post("/api/events", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      // Navigate to the new wizard route
-      navigate(`/dashboard/events/create-wizard/${response.data.id}`);
+      alert(
+        "Draft event created! You will now be taken to the ticket management page."
+      );
+      // Navigate to the new standalone ticket management page
+      navigate(`/dashboard/events/${response.data.id}/tickets`);
     } catch (error) {
       console.error("Error creating draft event:", error.response?.data);
       alert("Failed to create draft event.");
@@ -98,8 +101,9 @@ const AddEvent = () => {
       await api.post("/api/events", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert("Event created successfully!");
-      navigate("/dashboard/events");
+      alert("Event created and published successfully!");
+      // Optionally, you can reset the form or switch tabs here
+      // For now, it will stay on the "Add Event" tab
     } catch (error) {
       console.error("Error creating event:", error.response?.data);
       alert("Failed to create event.");

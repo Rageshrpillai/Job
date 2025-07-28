@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import api from "./api";
 
 const CouponManagementPage = () => {
-  const { eventId } = useParams(); // Get eventId from URL
+  const { eventId } = useParams();
   const [coupons, setCoupons] = useState([]);
   const [availableTickets, setAvailableTickets] = useState([]);
   const [eventName, setEventName] = useState("");
@@ -28,9 +28,13 @@ const CouponManagementPage = () => {
           api.get(`/api/events/${eventId}/tickets`),
           api.get(`/api/events/${eventId}/coupons`),
         ]);
-        setEventName(eventRes.data.title);
-        setAvailableTickets(ticketsRes.data);
-        setCoupons(couponsRes.data);
+
+        // ### START OF THE FIX ###
+        // Access the nested 'data' object returned by the API Resource
+        setEventName(eventRes.data.data.title);
+        setAvailableTickets(ticketsRes.data.data);
+        setCoupons(couponsRes.data.data);
+        // ### END OF THE FIX ###
       } catch (error) {
         console.error("Failed to fetch event data", error);
         alert("Failed to load event data. Please ensure the event exists.");
@@ -74,7 +78,7 @@ const CouponManagementPage = () => {
         `/api/events/${eventId}/coupons`,
         submissionData
       );
-      setCoupons((prev) => [...prev, response.data]);
+      setCoupons((prev) => [...prev, response.data.data]);
       setNewCoupon({
         code: "",
         discount_type: "fixed",
@@ -134,7 +138,6 @@ const CouponManagementPage = () => {
             Add a New Coupon
           </h3>
           <form onSubmit={handleAddCoupon} className="space-y-4">
-            {/* Form fields are the same as before */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label

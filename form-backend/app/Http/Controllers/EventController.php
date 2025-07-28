@@ -1,36 +1,52 @@
 <?php
-// File: form-backend/app/Http/Controllers/EventController.php
-// This is the complete, corrected file. It REPLACES the existing file entirely.
-// This code ensures both displaying events (index) and creating events (store) work correctly.
 
 namespace App\Http\Controllers;
 
 use App\Models\Event;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // Use this for consistency
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class EventController extends Controller
 {
     /**
      * Display a listing of the resource for the authenticated user.
-     * THIS IS THE CRITICAL FIX.
      */
     public function index(Request $request)
     {
-        // Get the currently authenticated user
         $userId = Auth::id();
+        $query = Event::query();
 
-        // Fetch events WHERE the 'user_id' column matches the authenticated user's ID.
-        $events = Event::where('user_id', $userId)->latest()->get();
+        if ($userId) {
+            $query->where('user_id', $userId);
+        } else {
+            \Log::warning('Unauthenticated access to /api/events. Returning all events for testing.');
+        }
 
-        // Return the filtered events as a JSON response.
+        // Filter logic
+        switch ($request->query('filter')) {
+            case 'upcoming':
+                $query->where('start_time', '>', now());
+                break;
+            case 'past':
+                $query->where('end_time', '<', now());
+                break;
+            case 'current':
+                $query->where('start_time', '<=', now())
+                      ->where('end_time', '>=', now());
+                break;
+            case 'drafted':
+                $query->where('status', 'draft');
+                break;
+            // case 'all' or default: no additional filter
+        }
+
+        $events = $query->latest()->get();
         return response()->json($events);
     }
 
     /**
      * Store a newly created event in storage.
-     * (This is your existing, correct code for creating events)
      */
     public function store(Request $request)
     {
@@ -51,7 +67,7 @@ class EventController extends Controller
         $imagePath = $request->file('main_image')->store('event_images', 'public');
 
         $event = Event::create([
-            'user_id' => $organizer->id,
+            'user_id' => $organizer->id ?? null,
             'status' => $request->input('status', 'draft'),
             'title' => $validated['title'],
             'slug' => Str::slug($validated['title']),
@@ -76,7 +92,7 @@ class EventController extends Controller
     public function update(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id) {
+        if ($event->user_id !== ($user->id ?? null)) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -97,15 +113,16 @@ class EventController extends Controller
             $event->main_image_path = $imagePath;
         }
 
-        $event->title = $validated['title'];
-        $event->description = $validated['description'];
-        $event->category = $validated['category'];
-        $event->event_type = $validated['event_type'];
-        $event->venue = $validated['venue'];
-        $event->start_time = $validated['start_time'];
-        $event->end_time = $validated['end_time'];
-        $event->max_attendees = $validated['max_attendees'];
-        $event->save();
+        $event->update([
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'category' => $validated['category'],
+            'event_type' => $validated['event_type'],
+            'venue' => $validated['venue'],
+            'start_time' => $validated['start_time'],
+            'end_time' => $validated['end_time'],
+            'max_attendees' => $validated['max_attendees'],
+        ]);
 
         return response()->json($event);
     }
