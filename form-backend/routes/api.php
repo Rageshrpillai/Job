@@ -40,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('events', EventController::class);
     Route::apiResource('events.tickets', TicketController::class)->shallow();
     Route::apiResource('events.coupons', CouponController::class)->shallow();   
+    
 
 
     // --- Sub-User Management Routes (User Dashboard) ---

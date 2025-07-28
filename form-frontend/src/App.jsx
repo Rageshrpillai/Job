@@ -21,14 +21,14 @@ import AnalysisPage from "./AnalysisPage";
 import EventManagementPage from "./EventManagementPage";
 import SubUserManagementPage from "./SubUserManagementPage";
 import UserRoleManagement from "./UserRoleManagement";
-import CreateEventWizard from "./CreateEventWizard"; // Import the wizard
+import CouponManagementPage from "./CouponManagementPage";
+import TicketManagementPage from "./TicketManagementPage"; // <-- Import the new page
 
-// This is a helper component to protect routes based on login status and role
+// This is a helper component to protect routes
 const ProtectedRoute = ({ isAllowed, redirectPath = "/login", children }) => {
   if (!isAllowed) {
     return <Navigate to={redirectPath} replace />;
   }
-  // The <Outlet /> component is used to render nested routes
   return children ? children : <Outlet />;
 };
 
@@ -36,7 +36,6 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for an authenticated user on initial application load
   useEffect(() => {
     api
       .get("/api/user")
@@ -47,9 +46,8 @@ function App() {
 
   const handleAuthSuccess = (userData) => {
     setUser(userData);
-    // After a successful login, navigate to the correct dashboard
     if (userData.is_admin) {
-      window.location.href = "/admin"; // Navigate to the main admin dashboard
+      window.location.href = "/admin";
     } else {
       window.location.href = "/dashboard";
     }
@@ -83,7 +81,7 @@ function App() {
     <div className="antialiased bg-slate-100">
       <Router>
         <Routes>
-          {/* Public Routes (for users who are not logged in) */}
+          {/* Public Routes */}
           <Route
             path="/login"
             element={
@@ -105,7 +103,7 @@ function App() {
             }
           />
 
-          {/* Protected Routes for Standard Users (with nested pages) */}
+          {/* Protected Routes for Standard Users */}
           <Route
             element={
               <ProtectedRoute
@@ -118,22 +116,24 @@ function App() {
               path="/dashboard"
               element={<UserDashboard user={user} onLogout={handleLogout} />}
             >
-              {/* Default page for /dashboard */}
-              <Route index element={<AnalysisPage />} />
-
-              {/* Other user dashboard pages */}
+              <Route index element={<Navigate to="analysis" replace />} />
+              <Route path="analysis" element={<AnalysisPage />} />
               <Route path="events" element={<EventManagementPage />} />
-              {/* THIS IS THE NEWLY ADDED ROUTE */}
+              {/* This is the new route for the standalone ticket page */}
               <Route
-                path="events/create-wizard/:eventId"
-                element={<CreateEventWizard />}
+                path="events/:eventId/tickets"
+                element={<TicketManagementPage />}
+              />
+              <Route
+                path="events/:eventId/coupons"
+                element={<CouponManagementPage />}
               />
               <Route path="sub-users" element={<SubUserManagementPage />} />
               <Route path="team-roles" element={<UserRoleManagement />} />
             </Route>
           </Route>
 
-          {/* Protected Routes for Admins (with nested pages) */}
+          {/* Protected Routes for Admins */}
           <Route
             element={
               <ProtectedRoute
@@ -146,20 +146,15 @@ function App() {
               path="/admin"
               element={<AdminDashboard user={user} onLogout={handleLogout} />}
             >
-              {/* These nested routes render inside AdminDashboard's <Outlet /> */}
-
-              {/* This is the default page for /admin */}
-              <Route index element={<DashboardSummary />} />
-
+              <Route index element={<Navigate to="summary" replace />} />
+              <Route path="summary" element={<DashboardSummary />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="admins" element={<AdminManagement />} />
-
-              {/* The path is now relative, which is correct */}
               <Route path="roles" element={<RoleManagement />} />
             </Route>
           </Route>
 
-          {/* Fallback Route: Redirects to the correct starting page */}
+          {/* Fallback Route */}
           <Route
             path="*"
             element={

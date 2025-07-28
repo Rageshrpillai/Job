@@ -1,188 +1,274 @@
 import React, { useState, useEffect } from "react";
 import api from "./api";
 
-const TicketSetup = ({ event, onNextStep, onPreviousStep }) => {
+const TicketSetup = ({ eventId, onNext, onBack }) => {
   const [tickets, setTickets] = useState([]);
   const [newTicket, setNewTicket] = useState({
     name: "",
     price: "",
-    quantity: "",
+    total_quantity: "",
+    description: "",
     sale_start_date: "",
     sale_end_date: "",
   });
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
 
-  // Fetch existing tickets for this event when the component loads
   useEffect(() => {
+    setIsLoading(true);
     api
-      .get(`/api/events/${event.id}/tickets`)
+      .get(`/api/events/${eventId}/tickets`)
       .then((response) => {
         setTickets(response.data);
       })
-      .catch((error) => console.error("Error fetching tickets:", error));
-  }, [event.id]);
+      .catch((error) => {
+        console.log("No existing tickets found or failed to fetch.");
+      })
+      .finally(() => setIsLoading(false));
+  }, [eventId]);
 
   const handleChange = (e) => {
-    setNewTicket({ ...newTicket, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setNewTicket((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddTicket = (e) => {
+  const handleAddTicket = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    api
-      .post(`/api/events/${event.id}/tickets`, newTicket)
-      .then((response) => {
-        setTickets([...tickets, response.data]); // Add new ticket to the list
-        // Reset form
-        setNewTicket({
-          name: "",
-          price: "",
-          quantity: "",
-          sale_start_date: "",
-          sale_end_date: "",
-        });
-      })
-      .catch((error) => {
-        console.error("Error adding ticket:", error.response?.data);
-        alert("Failed to add ticket.");
-      })
-      .finally(() => setLoading(false));
+    setIsAdding(true);
+
+    // ### START OF THE FIX ###
+    // Format the date string by replacing 'T' with a space to match the backend.
+    const submissionData = {
+      ...newTicket,
+      sale_start_date: newTicket.sale_start_date.replace("T", " ") + ":00",
+      sale_end_date: newTicket.sale_end_date.replace("T", " ") + ":00",
+    };
+    // ### END OF THE FIX ###
+
+    try {
+      const response = await api.post(
+        `/api/events/${eventId}/tickets`,
+        submissionData
+      );
+      setTickets((prev) => [...prev, response.data]);
+      setNewTicket({
+        name: "",
+        price: "",
+        total_quantity: "",
+        description: "",
+        sale_start_date: "",
+        sale_end_date: "",
+      });
+    } catch (error) {
+      console.error("Failed to add ticket:", error.response?.data);
+      alert(
+        "Failed to add ticket: " +
+          (error.response?.data?.message ||
+            "Please check the details and try again.")
+      );
+    } finally {
+      setIsAdding(false);
+    }
   };
 
-  const handleDeleteTicket = (ticketId) => {
-    if (window.confirm("Are you sure you want to delete this ticket type?")) {
-      api
-        .delete(`/api/tickets/${ticketId}`)
-        .then(() => {
-          setTickets(tickets.filter((t) => t.id !== ticketId));
-          alert("Ticket deleted successfully.");
-        })
-        .catch((error) => alert("Failed to delete ticket."));
+  const handleDeleteTicket = async (ticketId) => {
+    if (window.confirm("Are you sure you want to delete this ticket?")) {
+      try {
+        await api.delete(`/api/tickets/${ticketId}`);
+        setTickets(tickets.filter((ticket) => ticket.id !== ticketId));
+      } catch (error) {
+        console.error("Failed to delete ticket:", error.response?.data);
+        alert("Failed to delete ticket.");
+      }
     }
   };
 
   return (
     <div>
-      <h2 className="text-3xl font-bold text-gray-900 mb-2">Ticket Setup</h2>
-      <p className="text-gray-600 mb-8">
-        Step 2 of 4: Add different ticket types for your event.
+      <h2 className="text-2xl font-bold text-gray-800 mb-2">Ticket Setup</h2>
+      <p className="text-gray-600 mb-6">
+        Step 2 of 3: Add the different ticket types for your event.
       </p>
 
-      {/* Form for adding a new ticket type */}
-      <form
-        onSubmit={handleAddTicket}
-        className="bg-gray-50 p-6 rounded-lg border space-y-4 mb-8"
-      >
-        <h3 className="text-xl font-semibold text-gray-800">
-          Add New Ticket Type
+      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          Add a New Ticket
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <input
-            type="text"
-            name="name"
-            value={newTicket.name}
-            onChange={handleChange}
-            placeholder="Ticket Name (e.g., General Admission)"
-            className="p-2 border rounded-md"
-            required
-          />
-          <input
-            type="number"
-            name="price"
-            value={newTicket.price}
-            onChange={handleChange}
-            placeholder="Price ($)"
-            className="p-2 border rounded-md"
-            required
-          />
-          <input
-            type="number"
-            name="quantity"
-            value={newTicket.quantity}
-            onChange={handleChange}
-            placeholder="Quantity Available"
-            className="p-2 border rounded-md"
-            required
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="text-sm text-gray-600">Sale Start Date</label>
-            <input
-              type="date"
-              name="sale_start_date"
-              value={newTicket.sale_start_date}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md"
-            />
+        <form onSubmit={handleAddTicket} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Ticket Name
+              </label>
+              <input
+                type="text"
+                name="name"
+                id="name"
+                value={newTicket.name}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="e.g., General Admission"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Description (Optional)
+              </label>
+              <input
+                type="text"
+                name="description"
+                id="description"
+                value={newTicket.description}
+                onChange={handleChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="e.g., Access to main event area"
+              />
+            </div>
           </div>
-          <div>
-            <label className="text-sm text-gray-600">Sale End Date</label>
-            <input
-              type="date"
-              name="sale_end_date"
-              value={newTicket.sale_end_date}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="price"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Price ($)
+              </label>
+              <input
+                type="number"
+                name="price"
+                id="price"
+                value={newTicket.price}
+                onChange={handleChange}
+                required
+                min="0"
+                step="0.01"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="e.g., 25.00"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="total_quantity"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Total Quantity
+              </label>
+              <input
+                type="number"
+                name="total_quantity"
+                id="total_quantity"
+                value={newTicket.total_quantity}
+                onChange={handleChange}
+                required
+                min="1"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="e.g., 100"
+              />
+            </div>
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 self-end"
-          >
-            {loading ? "Adding..." : "+ Add Ticket"}
-          </button>
-        </div>
-      </form>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="sale_start_date"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Sale Starts On
+              </label>
+              <input
+                type="datetime-local"
+                name="sale_start_date"
+                id="sale_start_date"
+                value={newTicket.sale_start_date}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="sale_end_date"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Sale Ends On
+              </label>
+              <input
+                type="datetime-local"
+                name="sale_end_date"
+                id="sale_end_date"
+                value={newTicket.sale_end_date}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={isAdding}
+              className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+            >
+              {isAdding ? "Adding..." : "Add Ticket"}
+            </button>
+          </div>
+        </form>
+      </div>
 
-      {/* List of existing tickets */}
-      <div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">
-          Current Ticket Types
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          Current Tickets
         </h3>
-        <div className="space-y-3">
-          {tickets.length > 0 ? (
-            tickets.map((ticket) => (
-              <div
+        {isLoading ? (
+          <p>Loading tickets...</p>
+        ) : tickets.length > 0 ? (
+          <ul className="space-y-3">
+            {tickets.map((ticket) => (
+              <li
                 key={ticket.id}
-                className="flex justify-between items-center bg-white p-4 rounded-lg border"
+                className="bg-white p-4 rounded-lg shadow-sm flex justify-between items-center"
               >
                 <div>
-                  <p className="font-bold text-gray-900">{ticket.name}</p>
+                  <p className="font-semibold text-gray-900">{ticket.name}</p>
                   <p className="text-sm text-gray-600">
-                    Price: ${ticket.price} | Quantity: {ticket.quantity}
+                    ${parseFloat(ticket.price).toFixed(2)} -{" "}
+                    {ticket.total_quantity} available
                   </p>
                 </div>
                 <button
                   onClick={() => handleDeleteTicket(ticket.id)}
                   className="text-red-500 hover:text-red-700 font-semibold"
                 >
-                  Remove
+                  Delete
                 </button>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500">
-              No ticket types have been added yet.
-            </p>
-          )}
-        </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500 text-center py-4">
+            No tickets have been added yet.
+          </p>
+        )}
       </div>
 
-      {/* Navigation Buttons */}
-      <div className="flex justify-between pt-8 mt-8 border-t">
+      <div className="flex justify-between pt-6 mt-6 border-t">
         <button
-          onClick={onPreviousStep}
-          className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+          onClick={onBack}
+          className="py-3 px-8 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
         >
-          Back to Details
+          Back
         </button>
         <button
-          onClick={onNextStep}
-          className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700"
+          onClick={onNext}
+          className="inline-flex justify-center py-3 px-8 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
         >
-          Continue to Coupons
+          Save & Continue
         </button>
       </div>
     </div>

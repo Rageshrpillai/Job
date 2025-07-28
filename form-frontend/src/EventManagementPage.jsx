@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "./api";
 import AddEvent from "./AddEvent";
 import EventFormModal from "./EventFormModal";
 import PreviewEventModal from "./PreviewEventModal";
 
-// This component shows the list of existing events. Its logic is correct.
-const ManageEvents = () => {
+const ManageEvents = ({ filter }) => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewingEvent, setPreviewingEvent] = useState(null);
+  const navigate = useNavigate();
 
   const fetchEvents = () => {
     setLoading(true);
     api
-      .get("/api/events")
+      .get("/api/events", { params: { filter } })
       .then((response) => {
         setEvents(Array.isArray(response.data) ? response.data : []);
       })
@@ -29,7 +30,7 @@ const ManageEvents = () => {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [filter]);
 
   const handleDelete = (eventId) => {
     if (window.confirm("Are you sure you want to delete this event?")) {
@@ -53,6 +54,10 @@ const ManageEvents = () => {
     setIsPreviewModalOpen(true);
   };
 
+  const handleNavigate = (path) => {
+    navigate(path);
+  };
+
   const onFormSubmit = () => {
     setIsFormModalOpen(false);
     fetchEvents();
@@ -64,9 +69,6 @@ const ManageEvents = () => {
   return (
     <>
       <div className="bg-white p-6 rounded-b-2xl rounded-tr-2xl shadow-lg">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Your Events</h2>
-        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -100,7 +102,7 @@ const ManageEvents = () => {
                         {event.status || "Draft"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-4">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <button
                         onClick={() => handlePreview(event)}
                         className="text-blue-600 hover:text-blue-800"
@@ -112,6 +114,27 @@ const ManageEvents = () => {
                         className="text-green-600 hover:text-green-800"
                       >
                         Edit
+                      </button>
+                      {/* This is the new button for tickets */}
+                      <button
+                        onClick={() =>
+                          handleNavigate(
+                            `/dashboard/events/${event.id}/tickets`
+                          )
+                        }
+                        className="text-orange-600 hover:text-orange-800"
+                      >
+                        Tickets
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleNavigate(
+                            `/dashboard/events/${event.id}/coupons`
+                          )
+                        }
+                        className="text-purple-600 hover:text-purple-800"
+                      >
+                        Coupons
                       </button>
                       <button
                         onClick={() => handleDelete(event.id)}
@@ -125,7 +148,7 @@ const ManageEvents = () => {
               ) : (
                 <tr>
                   <td colSpan="4" className="text-center py-10 text-gray-500">
-                    You have not created any events yet.
+                    No events match the selected filter.
                   </td>
                 </tr>
               )}
@@ -148,9 +171,9 @@ const ManageEvents = () => {
   );
 };
 
-// Main page container with the corrected, simple tab logic.
 const EventManagementPage = () => {
   const [activeTab, setActiveTab] = useState("manage");
+  const [filter, setFilter] = useState("upcoming");
 
   const baseTabStyles =
     "py-3 px-6 font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500";
@@ -158,6 +181,12 @@ const EventManagementPage = () => {
     "border-b-4 border-blue-600 text-blue-600 bg-white rounded-t-lg";
   const inactiveTabStyles =
     "text-gray-500 hover:text-gray-800 border-b-4 border-transparent";
+
+  const getFilterButtonClass = (buttonFilter) => {
+    return filter === buttonFilter
+      ? "bg-indigo-600 text-white"
+      : "bg-white text-gray-700 hover:bg-gray-50";
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
@@ -180,8 +209,44 @@ const EventManagementPage = () => {
             Add New Event
           </button>
         </div>
-        <div className="mt-[-1px]">
-          {activeTab === "manage" ? <ManageEvents /> : <AddEvent />}
+
+        {activeTab === "manage" && (
+          <div className="pt-6 pb-4 bg-white px-6 rounded-tr-2xl">
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setFilter("upcoming")}
+                className={`px-4 py-2 text-sm font-semibold rounded-full shadow-sm border border-gray-300 ${getFilterButtonClass(
+                  "upcoming"
+                )}`}
+              >
+                Upcoming Events
+              </button>
+              <button
+                onClick={() => setFilter("current")}
+                className={`px-4 py-2 text-sm font-semibold rounded-full shadow-sm border border-gray-300 ${getFilterButtonClass(
+                  "current"
+                )}`}
+              >
+                Current Events
+              </button>
+              <button
+                onClick={() => setFilter("past")}
+                className={`px-4 py-2 text-sm font-semibold rounded-full shadow-sm border border-gray-300 ${getFilterButtonClass(
+                  "past"
+                )}`}
+              >
+                Past Events
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className={activeTab === "manage" ? "mt-[-1px]" : ""}>
+          {activeTab === "manage" ? (
+            <ManageEvents filter={filter} />
+          ) : (
+            <AddEvent />
+          )}
         </div>
       </div>
     </div>

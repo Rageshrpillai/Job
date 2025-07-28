@@ -2,81 +2,65 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Ticket;
 use App\Models\Event;
+use App\Models\Ticket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TicketController extends Controller
 {
     /**
-     * Display a listing of the tickets for a specific event.
+     * Display a listing of the resource.
      */
     public function index(Event $event)
     {
-        // Security check: Ensure the user owns the event
         if ($event->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
+
         return response()->json($event->tickets);
     }
 
     /**
-     * Store a newly created ticket in storage.
+     * Store a newly created resource in storage.
      */
     public function store(Request $request, Event $event)
     {
         if ($event->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $validated = $request->validate([
+        // ### START OF THE FIX ###
+        // Updated validation to match the frontend form and database migration.
+        $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'quantity' => 'required|integer|min:1',
-            'sale_start_date' => 'nullable|date',
-            'sale_end_date' => 'nullable|date|after_or_equal:sale_start_date',
+            'total_quantity' => 'required|integer|min:1', // Corrected field name
+            'description' => 'nullable|string',
+            'sale_start_date' => 'required|date',
+            'sale_end_date' => 'required|date|after_or_equal:sale_start_date',
         ]);
-
-        $ticket = $event->tickets()->create($validated);
+        // ### END OF THE FIX ###
+        
+        // The rest of the data is now correctly named from the form
+        $ticket = $event->tickets()->create($validatedData);
 
         return response()->json($ticket, 201);
     }
 
     /**
-     * Update the specified ticket in storage.
-     */
-    public function update(Request $request, Ticket $ticket)
+     * Remove the specified resource from storage.
+     */ public function destroy(Ticket $ticket)
     {
-        // Security check: Use the event relationship to verify ownership
+        // ### START OF THE FIX ###
+        // Get the parent event from the ticket and check if the authenticated user owns it.
         if ($ticket->event->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'quantity' => 'required|integer|min:1',
-            'sale_start_date' => 'nullable|date',
-            'sale_end_date' => 'nullable|date|after_or_equal:sale_start_date',
-        ]);
-
-        $ticket->update($validated);
-
-        return response()->json($ticket);
-    }
-
-    /**
-     * Remove the specified ticket from storage.
-     */
-    public function destroy(Ticket $ticket)
-    {
-        if ($ticket->event->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+        // ### END OF THE FIX ###
 
         $ticket->delete();
 
-        return response()->json(['message' => 'Ticket deleted successfully.']);
+        return response()->json(['message' => 'Ticket deleted successfully'], 200);
     }
 }

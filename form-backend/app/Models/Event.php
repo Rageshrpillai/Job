@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Coupon;
 
 class Event extends Model
 {
@@ -64,7 +65,7 @@ class Event extends Model
     {
         return $this->hasMany(Ticket::class);
     }
-    
+
     /**
      * Get the coupons for the event.
      */

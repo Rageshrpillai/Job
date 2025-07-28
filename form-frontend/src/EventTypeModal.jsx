@@ -9,17 +9,13 @@ const EventTypeModal = ({ isOpen, onClose, onConfirm }) => {
         <h2 className="text-xl font-semibold mb-4">
           Is this a ticketed event?
         </h2>
-        <p className="text-gray-600 mb-6">
-          A ticketed event allows you to sell tickets, manage attendees, and
-          offer coupons. A non-ticketed event is for display and information
-          only.
-        </p>
+        <p className="text-gray-600 mb-6"></p>
         <div className="flex justify-end space-x-4">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
           >
-            No, it's for Info
+            No, it's not
           </button>
           <button
             onClick={onConfirm}
