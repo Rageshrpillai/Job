@@ -15,29 +15,35 @@ const TicketManagementPage = () => {
     sale_end_date: "",
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [coupons, setCoupons] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
+    // *** BUG FIX START ***
+    // Don't fetch data if the eventId isn't available yet.
+    if (!eventId) {
+      return;
+    }
+    // *** BUG FIX END ***
+
     const fetchEventData = async () => {
       setIsLoading(true);
       try {
-        const [eventRes, ticketsRes] = await Promise.all([
+        const [eventRes, couponsRes] = await Promise.all([
           api.get(`/api/events/${eventId}`),
-          api.get(`/api/events/${eventId}/tickets`),
+          api.get(`/api/events/${eventId}/coupons`),
         ]);
 
-        // ### START OF THE FIX ###
-        // Access the nested 'data' object returned by the API Resource
-        setEventName(eventRes.data.data.title);
-        setTickets(ticketsRes.data.data);
-        // ### END OF THE FIX ###
+        setEventName(eventRes.data.data.name);
+        setCoupons(couponsRes.data.data);
       } catch (error) {
-        console.error("Failed to fetch event tickets", error);
-        alert("Failed to load ticket data. Please ensure the event exists.");
+        console.error("Failed to fetch event coupons", error);
+        alert("Failed to load coupon data. Please ensure the event exists.");
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchEventData();
   }, [eventId]);
 
